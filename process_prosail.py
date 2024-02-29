@@ -24,11 +24,15 @@ sys.path.append(str(PROJECT_FOLDER))
 import prosail_inv_cnsts as cnst
 
 
+class ProsailBuildError(Exception):
+    pass
+
+
 # import prosail, attempt to build if not found
 try:
     import prosail
 except ImportError:
-    if input("Prosail not found, build from source (y/n): ") == "y":
+    if input("PROSAIL not found, build from source (y/n): ").strip() == "y":
         import subprocess
 
         PROSAIL_FOLDER = PROJECT_FOLDER / "external_packages" / "prosail"
@@ -37,13 +41,17 @@ except ImportError:
         subp_retval = subprocess.call([sys.executable, PROSAIL_FOLDER / "setup.py", "install"])
         os.chdir(CURRENT_FOLDER)
         if subp_retval != 0:
-            raise Exception("BUILD FAILURE, consider building manually.")
+            raise ProsailBuildError("BUILD FAILURE, consider building manually.")
         sys.exit("BUILD SUCCESS, please run again.")
     else:
         sys.exit("Please build prosail to run this script")
 
 
-# get hyperspectral image location
+class ImageLoadError(Exception):
+    pass
+
+
+# get hyperspectral image path
 if PERSISTENT_DATA_PATH.exists():
     with open(PERSISTENT_DATA_PATH, "r") as f:
         persistent_data = json.load(f)
@@ -65,14 +73,19 @@ try:
         raise ValueError
 except (ValueError, KeyError):
     PERSISTENT_DATA_PATH.unlink()
-    raise Exception("Image failed to load, please run again and re-enter file paths.")
+    raise ImageLoadError("Image failed to load, please run again and re-enter file paths.")
+
+
+class ParseEnviError(Exception):
+    pass
 
 
 # get wavelengths from hdr file
-with open(IMG_HDR_PATH, "r") as f:
-    wavelengths_str = ""
-    looking_at_wavelengths = False
-    for line in f:
+wavelengths_str = ""
+looking_at_wavelengths = False
+hdr_file = open(IMG_HDR_PATH, "r")
+try:
+    for line in hdr_file:
         if looking_at_wavelengths:
             wavelengths_str += line
             if line.rstrip().endswith("}"):
@@ -83,13 +96,17 @@ with open(IMG_HDR_PATH, "r") as f:
                 wavelengths_str += line
                 if line.rstrip().endswith("}"):
                     break
-wavelengths_str_list = wavelengths_str.replace("\n", "").replace(" ", "")[12:-1].split(",")
-wavelengths_array = np.empty(len(wavelengths_str_list), dtype=np.float64)
-for i, v in enumerate(wavelengths_str_list):
-    wavelengths_array[i] = np.float64(v)
-WAVELENGTHS = wavelengths_array
-# print(WAVELENGTHS)
+    hdr_file.close()
+    wavelengths_str_list = wavelengths_str.replace("\n", "").replace(" ", "")[12:-1].split(",")
+    wavelengths_array = np.empty(len(wavelengths_str_list), dtype=np.float64)
+    for i, v in enumerate(wavelengths_str_list):
+        wavelengths_array[i] = np.float64(v)
+    WAVELENGTHS = wavelengths_array
+except Exception:
+    hdr_file.close()
+    raise ParseEnviError("Failed to parse wavelengths from hyperspectral image.")
 
+# print(WAVELENGTHS)
 
 # load hyperspectral image using spectral python
 try:
@@ -99,11 +116,11 @@ try:
     np_img = spy_img.open_memmap()
 except (TypeError, envi.EnviDataFileNotFoundError):
     PERSISTENT_DATA_PATH.unlink()
-    raise Exception("Image failed to load, please run again and re-enter file paths.")
+    raise ImageLoadError("Image failed to load, please run again and re-enter file paths.")
 
 
+print("---------- STARTING PROSAIL INVERSION ----------")
 # print(np_img.shape)
-
 
 # loop over all of the pixels in the image
 for j in range(np_img.shape[0]):
