@@ -36,6 +36,8 @@ except ImportError:
         import subprocess
 
         PROSAIL_FOLDER = PROJECT_FOLDER / "external_packages" / "prosail"
+        if not PROSAIL_FOLDER.exists():
+            subp_retval = subprocess.call(["git", "clone", "https://github.com/jgomezdans/prosail", PROSAIL_FOLDER])
         CURRENT_FOLDER = os.getcwd()
         os.chdir(PROSAIL_FOLDER)
         subp_retval = subprocess.call([sys.executable, PROSAIL_FOLDER / "setup.py", "install"])

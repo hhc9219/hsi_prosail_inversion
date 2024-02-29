@@ -1,6 +1,7 @@
 # Nonessentials
 .vscode
 persistent_data.json
+external_packages/
 my_hsi/
 
 # Byte-compiled / optimized / DLL files
