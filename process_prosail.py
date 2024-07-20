@@ -180,61 +180,6 @@ class InstallProsailError(Exception):
     pass
 
 
-class Context:
-    data_filename = "data"
-
-    def __init__(
-        self, folder: Path | str | None = None, data_filename: str | None = None, add_to_path: bool | None = None
-    ) -> None:
-        do_add_to_path = add_to_path
-        self.file_folder = Path(__file__).parent.resolve()
-        if folder:
-            if isinstance(folder, Path):
-                context_folder = folder.resolve()
-            else:
-                context_folder = Path(folder).resolve()
-            if context_folder.exists():
-                self.context_folder = context_folder
-            else:
-                raise ValueError(f"The path: '{context_folder}' does not exist.")
-        else:
-            self.context_folder = self.file_folder
-            do_add_to_path = True if add_to_path is None else add_to_path
-        if do_add_to_path:
-            context_folder_str = str(self.context_folder)
-            if context_folder_str not in sys.path:
-                sys.path.append(context_folder_str)
-        if data_filename:
-            data_name = data_filename
-        else:
-            data_name = self.data_filename
-        self.data_path = self.context_folder / (data_name + ".json")
-        self.data_path_exists = self.data_path.exists()
-        if self.data_path_exists:
-            with open(self.data_path, "r") as f:
-                self.data: dict[str, Any] = json.load(f)
-        else:
-            self.data: dict[str, Any] = {}
-        self.temp_data: dict[str, Any] = {}
-        self.last_folder = None
-
-    def __enter__(self):
-        self.last_folder = Path(os.getcwd()).resolve()
-        os.chdir(self.context_folder)
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):  # type:ignore
-        if self.last_folder:
-            os.chdir(self.last_folder)
-            if self.data:
-                with open(self.data_path, "w") as f:
-                    json.dump(self.data, f)
-            else:
-                if self.data_path_exists:
-                    self.data_path.unlink()
-        else:
-            raise RuntimeError("Could not restore the last working directory because it was never set.")
-
 
 class HsiInfoManager:
     def __init__(self, project: Context):
