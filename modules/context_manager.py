@@ -67,7 +67,9 @@ class Context:
         return Path(sys.executable).resolve() == exe_path
 
 
-def enforce_venv(file: str, data_filename: str | None = None, venv_python_data_key: str = "venv_python"):
+def enforce_venv(
+    file: str, data_filename: str | None = "environment_config.json", venv_python_data_key: str = "venv_python"
+):
     with Context(data_filename=data_filename) as project:
         if project.data:
             if venv_python_data_key in project.data:

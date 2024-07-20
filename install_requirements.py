@@ -6,7 +6,7 @@ from pathlib import Path
 from modules.context_manager import Context
 
 def main():
-    with Context() as project:
+    with Context(data_filename="environment_config.json") as project:
         if project.data:
             print(
                 "\nThe installation process has already been run.\n"

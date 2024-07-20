@@ -2,8 +2,7 @@
 external_packages/
 hsi/*
 output/*
-data.json
-hsi_info.json
+/*.json
 
 # Nonessentials
 .vscode
