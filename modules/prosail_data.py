@@ -114,7 +114,8 @@ class ProsailData(DynamicData):
 
     def reflectance_rmse_residual(
         self,
-        wavelengths_reflectances: tuple[NDArray[np.float64], ...],
+        wavelengths: NDArray[np.float64],
+        reflectances: NDArray[np.float64],
         SZA: float | None = None,
         VZA: float | None = None,
         RAA: float | None = None,
@@ -125,14 +126,14 @@ class ProsailData(DynamicData):
             self.VZA = VZA
         if RAA:
             self.RAA = RAA
-        passed_wavelengths, passed_reflectances = wavelengths_reflectances
-        wavelengths, reflectances = self.run_prosail()
-        interp_reflectances = np.interp(passed_wavelengths, wavelengths, reflectances)
-        return np.sqrt(np.mean((interp_reflectances - passed_reflectances) ** 2))
+        prosail_wavelengths, prosail_reflectances = self.run_prosail()
+        interp_reflectances = np.interp(wavelengths, prosail_wavelengths, prosail_reflectances)
+        return np.sqrt(np.mean((interp_reflectances - reflectances) ** 2))
 
     def fit_to_reflectances(
         self,
-        wavelengths_reflectances: tuple[NDArray[np.float64], ...],
+        wavelengths: NDArray[np.float64],
+        reflectances: NDArray[np.float64],
         SZA: float | None = None,
         VZA: float | None = None,
         RAA: float | None = None,
@@ -148,7 +149,7 @@ class ProsailData(DynamicData):
 
             self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL = x
             self.execute()
-            return self.reflectance_rmse_residual(wavelengths_reflectances)
+            return self.reflectance_rmse_residual(wavelengths, reflectances)
 
         result = optimize.minimize(
             fun=fun,
@@ -163,7 +164,7 @@ class ProsailData(DynamicData):
                 (self.LAI_MIN, self.LAI_MAX),
                 (self.PSOIL_MIN, self.PSOIL_MAX),
             ),
-            options={"adaptive": True, "fatol":0.01, "xatol":2.5},
+            options={"adaptive": True, "fatol": 0.01, "xatol": 2.5},
         )
         if result.success:
             self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL = result.x

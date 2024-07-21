@@ -15,11 +15,11 @@ hhc9219@rit.edu
 """
 
 import os
-from typing import Any
-from pathlib import Path
 import numpy as np
-from numpy.typing import NDArray
 import spectral.io.envi as envi  # type:ignore
+from pathlib import Path
+from typing import Any
+from numpy.typing import NDArray
 
 import tkinter as tk
 from tkinter import filedialog
@@ -112,12 +112,45 @@ def get_wavelengths(img_hdr_path: Path):
 
         raise ParseEnviError("Failed to parse wavelengths from hyperspectral image.")
 
-def get_anc_data(anc_hdr_path:Path, anc_data_path:Path):
+
+def get_anc_data(anc_hdr_path: Path, anc_data_path: Path):
     anc = open_envi_hsi_as_np_memmap(anc_hdr_path, anc_data_path)
-    longitude = anc[:,:,0]
-    latitude = anc[:,:,1]
-    sensor_zenith = anc[:,:,2]
-    sensor_azimuth = anc[:,:,3]
-    solar_zenith = anc[:,:,4]
-    solar_azimuth = anc[:,:,5]
+    longitude = anc[:, :, 0]
+    latitude = anc[:, :, 1]
+    sensor_zenith = anc[:, :, 2]
+    sensor_azimuth = anc[:, :, 3]
+    solar_zenith = anc[:, :, 4]
+    solar_azimuth = anc[:, :, 5]
     return longitude, latitude, sensor_zenith, sensor_azimuth, solar_zenith, solar_azimuth
+
+
+class Memmap:
+    def __init__(
+        self, memmap_dat_path: Path, dtype: type = np.float64, mode: str = "r", shape: tuple[int, ...] | None = None
+    ):
+        self.dat_path = memmap_dat_path
+        self.shape = shape
+        self.mode = mode
+        self.dtype = dtype
+        self.array = None
+
+    def open_array(self):
+        if self.mode == "r" or self.mode == "w+" or self.mode == "r+" or self.mode == "c":
+            self.array = np.memmap(self.dat_path, dtype=self.dtype, mode=self.mode, shape=self.shape)
+        else:
+            raise ValueError("Mode must be r or w+")
+        return self.array
+
+    def close_array(self):
+        if self.array is not None:
+            if self.mode == "w+" or self.mode == "r+":
+                self.array.flush()
+            del self.array
+            self.array = None
+
+    def __enter__(self):
+        self.open_array()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close_array()

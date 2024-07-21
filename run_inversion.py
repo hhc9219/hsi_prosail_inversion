@@ -19,7 +19,7 @@ from modules import hsi_io, prosail_data
 
 
 def main():
-    resource_data = get_resource_config()
+    threads, memory = get_resource_values()
     hsi_data = get_hsi_config()
 
     uas_hsi_small_hdr = Path(hsi_data["uas_hsi_small"]["hdr"])
@@ -36,12 +36,13 @@ def main():
     uas_hsi_large = hsi_io.open_envi_hsi_as_np_memmap(uas_hsi_large_hdr, uas_hsi_large_img)
 
 
-def get_resource_config():
+def get_resource_values() -> tuple[int, int | float]:
     with Context(data_filename="resource_config.json") as resource_config:
         if resource_config.data:
-            return resource_config.data
+            return resource_config.data["cpu_thread_count"], resource_config.data["memory_GB"]
         else:
             raise FileNotFoundError("resource_config.json was not found")
+
 
 def get_hsi_config():
     with Context(data_filename="hsi_config.json") as hsi_config:
@@ -49,6 +50,7 @@ def get_hsi_config():
             return hsi_config.data
         else:
             raise FileNotFoundError("hsi_config.json was not found")
+
 
 if __name__ == "__main__":
     main()
