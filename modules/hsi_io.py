@@ -19,7 +19,6 @@ import numpy as np
 import spectral.io.envi as envi  # type:ignore
 from pathlib import Path
 from typing import Any
-from numpy.typing import NDArray
 
 import tkinter as tk
 from tkinter import filedialog
@@ -30,6 +29,39 @@ root.withdraw()
 
 class ParseEnviError(Exception):
     pass
+
+
+class Memmap:
+    def __init__(
+        self, npy_path: Path, dtype: type = np.float64, mode: str = "r", shape: tuple[int, ...] | None = None
+    ):
+        self.npy_path = npy_path
+        self.shape = shape
+        self.mode = mode
+        self.dtype = dtype
+        self.array: np.memmap[Any, Any] | None = None
+
+    def open_array(self):
+        if self.mode in ["r", "c", "r+", "w+"]:
+            if self.mode in ["r+", "w+"] and self.shape is None:
+                raise ValueError("Shape must be specified when creating a new file.")
+            self.array = np.lib.format.open_memmap(self.npy_path, mode=self.mode, dtype=self.dtype, shape=self.shape)
+        else:
+            raise ValueError("Mode must be 'r', 'c', 'r+', or 'w+'.")
+
+    def close_array(self):
+        if self.array is not None:
+            if self.mode in ["r+", "w+"]:
+                self.array.flush()
+            del self.array
+            self.array = None
+
+    def __enter__(self):
+        self.open_array()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close_array()
 
 
 def open_file_path(folder_name: str | None = None, ext: str | None = None, **kwargs: Any):
@@ -65,9 +97,7 @@ def get_envi_hsi_data_path(img_hdr_path: Path, ext: str | list[str] = ["", ".img
     raise FileNotFoundError("Could not find hsi data location.")
 
 
-def open_envi_hsi_as_np_memmap(
-    img_hdr_path: Path | None = None, img_data_path: Path | None = None, writable: bool | None = False
-):
+def resolve_img_paths(img_hdr_path: Path | None, img_data_path: Path | None):
     if not img_hdr_path:
         img_hdr_path = open_file_path(folder_name="hsi", ext=".hdr")
 
@@ -76,9 +106,35 @@ def open_envi_hsi_as_np_memmap(
     else:
         img_data_path = get_envi_hsi_data_path(img_hdr_path)
 
-    spy_img: Any = envi.open(img_hdr_path, img_data_path)  # type:ignore
-    np_img: NDArray = spy_img.open_memmap(writable=writable)
-    return np_img
+    return img_hdr_path, img_data_path
+
+
+def open_envi_hsi_as_np_memmap(
+    img_hdr_path: Path | None = None, img_data_path: Path | None = None, writable: bool | None = False
+) -> np.memmap[Any, Any]:
+    img_hdr_path, img_data_path = resolve_img_paths(img_hdr_path, img_data_path)
+    spy_img: Any = envi.open(img_hdr_path, img_data_path)
+    return spy_img.open_memmap(writable=writable)
+
+
+def open_envi_hsi_as_memmap(
+    img_hdr_path: Path | None = None,
+    img_data_path: Path | None = None,
+    npy_save_folder: Path | None = None,
+    npy_filename: str | None = None,
+):
+    img_hdr_path, img_data_path = resolve_img_paths(img_hdr_path, img_data_path)
+    npy_save_folder = img_data_path.parent if npy_save_folder is None else npy_save_folder
+    npy_filename = img_data_path.name + ".npy" if npy_filename is None else npy_filename
+    npy_path = npy_save_folder / npy_filename
+    hsi_memmap = Memmap(npy_path=npy_path, mode="w+")
+    np_memmap = open_envi_hsi_as_np_memmap(img_hdr_path=img_hdr_path, img_data_path=img_data_path, writable=False)
+    hsi_memmap.dtype = np_memmap.dtype
+    hsi_memmap.shape = np_memmap.shape
+    hsi_memmap.open_array()
+    hsi_memmap.array = np_memmap
+    del np_memmap
+    return hsi_memmap
 
 
 def get_wavelengths(img_hdr_path: Path):
@@ -121,36 +177,5 @@ def get_anc_data(anc_hdr_path: Path, anc_data_path: Path):
     sensor_azimuth = anc[:, :, 3]
     solar_zenith = anc[:, :, 4]
     solar_azimuth = anc[:, :, 5]
+    del anc
     return longitude, latitude, sensor_zenith, sensor_azimuth, solar_zenith, solar_azimuth
-
-
-class Memmap:
-    def __init__(
-        self, memmap_dat_path: Path, dtype: type = np.float64, mode: str = "r", shape: tuple[int, ...] | None = None
-    ):
-        self.dat_path = memmap_dat_path
-        self.shape = shape
-        self.mode = mode
-        self.dtype = dtype
-        self.array = None
-
-    def open_array(self):
-        if self.mode == "r" or self.mode == "w+" or self.mode == "r+" or self.mode == "c":
-            self.array = np.memmap(self.dat_path, dtype=self.dtype, mode=self.mode, shape=self.shape)
-        else:
-            raise ValueError("Mode must be r or w+")
-        return self.array
-
-    def close_array(self):
-        if self.array is not None:
-            if self.mode == "w+" or self.mode == "r+":
-                self.array.flush()
-            del self.array
-            self.array = None
-
-    def __enter__(self):
-        self.open_array()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close_array()
