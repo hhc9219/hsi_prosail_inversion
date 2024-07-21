@@ -40,8 +40,10 @@ class Memmap:
         self.mode = mode
         self.dtype = dtype
         self.array: np.memmap[Any, Any] | None = None
+        self.is_open = False
 
     def open_array(self):
+        self.is_open = True
         if self.mode in ["r", "c", "r+", "w+"]:
             if self.mode in ["r+", "w+"] and self.shape is None:
                 raise ValueError("Shape must be specified when creating a new file.")
@@ -55,6 +57,7 @@ class Memmap:
                 self.array.flush()
             del self.array
             self.array = None
+        self.is_open = False
 
     def __enter__(self):
         self.open_array()

@@ -8,10 +8,11 @@ hhc9219@rit.edu
 import prosail
 import numpy as np
 from typing import Any
-from numpy.typing import NDArray
 from scipy import optimize
 
 from .dynamic_data import DynamicData
+
+NDArrayFloat = np.ndarray[Any, np.dtype[np.float32 | np.float64]]
 
 
 class ProsailData(DynamicData):
@@ -89,7 +90,7 @@ class ProsailData(DynamicData):
         self.set_funcs(HSPOT=lambda LAI: 0.5 / LAI)
         self.execute()
 
-    def run_prosail(self) -> tuple[NDArray[np.float64] | Any, ...]:
+    def run_prosail(self) -> tuple[NDArrayFloat | Any, ...]:
         reflectances = prosail.run_prosail(
             n=self.N,
             cab=self.CAB,
@@ -114,8 +115,8 @@ class ProsailData(DynamicData):
 
     def reflectance_rmse_residual(
         self,
-        wavelengths: NDArray[np.float64],
-        reflectances: NDArray[np.float64],
+        wavelengths: NDArrayFloat,
+        reflectances: NDArrayFloat,
         SZA: float | None = None,
         VZA: float | None = None,
         RAA: float | None = None,
@@ -132,8 +133,8 @@ class ProsailData(DynamicData):
 
     def fit_to_reflectances(
         self,
-        wavelengths: NDArray[np.float64],
-        reflectances: NDArray[np.float64],
+        wavelengths: NDArrayFloat,
+        reflectances: NDArrayFloat,
         SZA: float | None = None,
         VZA: float | None = None,
         RAA: float | None = None,

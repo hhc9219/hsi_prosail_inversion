@@ -13,6 +13,7 @@ enforce_venv(__file__)
 import numpy as np
 from pathlib import Path
 from modules import hsi_io
+from modules.hsi_processing import hsi_to_sRGB_inplace_mp
 
 """
 from tqdm import tqdm
@@ -31,7 +32,7 @@ def main():
     uas_hsi_small_hdr = Path(hsi_config["uas_hsi_small"]["hdr"])
     uas_hsi_small_img = Path(hsi_config["uas_hsi_small"]["img"])
     uas_hsi_large_hdr = Path(hsi_config["uas_hsi_large"]["hdr"])
-    uas_hsi_large_img = Path(hsi_config["uas_hsi_large"]["img"])
+    # uas_hsi_large_img = Path(hsi_config["uas_hsi_large"]["img"])
 
     uas_hsi_small_wavelengths = hsi_io.get_wavelengths(uas_hsi_small_hdr)
     uas_hsi_large_wavelengths = hsi_io.get_wavelengths(uas_hsi_large_hdr)
@@ -42,12 +43,14 @@ def main():
     uas_hsi_small = hsi_io.open_envi_hsi_as_memmap(
         uas_hsi_small_hdr, uas_hsi_small_img, output_folder, "uas_hsi_small.npy"
     )
+    """
     uas_hsi_large = hsi_io.open_envi_hsi_as_memmap(
         uas_hsi_large_hdr, uas_hsi_large_img, output_folder, "uas_hsi_large.npy"
     )
-
+    """
+    assert uas_hsi_small.array is not None
+    hsi_to_sRGB_inplace_mp(uas_hsi_small.array, wavelengths, num_threads=8, max_bytes=int(16e9))
     uas_hsi_small.close_array()
-    uas_hsi_large.close_array()
 
 
 def get_project_folder():
