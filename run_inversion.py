@@ -38,7 +38,6 @@ def main():
     uas_hsi_large_wavelengths = hsi_io.get_wavelengths(uas_hsi_large_hdr)
     assert np.allclose(uas_hsi_small_wavelengths, uas_hsi_large_wavelengths)
     wavelengths = uas_hsi_small_wavelengths
-    print(len(wavelengths))
 
     uas_hsi_small = hsi_io.open_envi_hsi_as_memmap(
         uas_hsi_small_hdr, uas_hsi_small_img, output_folder, "uas_hsi_small.npy"
@@ -49,7 +48,9 @@ def main():
     )
     """
     assert uas_hsi_small.array is not None
-    hsi_to_sRGB_inplace_mp(uas_hsi_small.array, wavelengths, num_threads=8, max_bytes=int(16e9))
+    hsi_to_sRGB_inplace_mp(
+        uas_hsi_small.array, wavelengths, wavelengths_resample_interval=1, num_threads=7, max_bytes=int(1e9)
+    )
     uas_hsi_small.close_array()
 
 

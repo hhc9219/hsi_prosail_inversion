@@ -1,0 +1,1 @@
+check if open_envi_hsi_as_memmap leads to unintentional modification of the envi hsi

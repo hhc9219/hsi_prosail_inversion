@@ -131,7 +131,7 @@ def open_envi_hsi_as_memmap(
     npy_filename = img_data_path.name + ".npy" if npy_filename is None else npy_filename
     npy_path = npy_save_folder / npy_filename
     hsi_memmap = Memmap(npy_path=npy_path, mode="w+")
-    np_memmap = open_envi_hsi_as_np_memmap(img_hdr_path=img_hdr_path, img_data_path=img_data_path, writable=False)
+    np_memmap = open_envi_hsi_as_np_memmap(img_hdr_path=img_hdr_path, img_data_path=img_data_path, writable=True)
     hsi_memmap.dtype = np_memmap.dtype
     hsi_memmap.shape = np_memmap.shape
     hsi_memmap.open_array()
