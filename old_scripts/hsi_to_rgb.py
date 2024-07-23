@@ -1,6 +1,6 @@
 """
-A Script to invert the prosail radiative transfer model using the Nelder-Mead simplex method
-on a pixel by pixel basis for an ENVI hyperspectral image.
+Old script to convert a specific hyperspectral image to an sRGB image.
+Was in the project root directory.
 
 hhc9219@rit.edu
 """

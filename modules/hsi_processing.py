@@ -216,22 +216,6 @@ def make_img_func_mp(img_func: Callable[[np.ndarray, Any], np.ndarray]):
     return mp_img_func
 
 
-def hsi_to_sRGB_float(
-    hsi: NDArrayFloat,
-    original_wavelengths: NDArrayFloat,
-    wavelengths_resample_interval: int | None = 1,
-    illuminant=colour.SDS_ILLUMINANTS["D65"],
-    cmfs=colour.MSDS_CMFS["CIE 1931 2 Degree Standard Observer"],
-):
-    color_converter = ColorConverter(
-        original_wavelengths=original_wavelengths,
-        wavelengths_resample_interval=wavelengths_resample_interval,
-        illuminant=illuminant,
-        cmfs=cmfs,
-    )
-    return color_converter.hsi_to_sRGB_float(hsi=hsi)
-
-
 def hsi_to_sRGB(
     hsi: NDArrayFloat,
     original_wavelengths: NDArrayFloat,
