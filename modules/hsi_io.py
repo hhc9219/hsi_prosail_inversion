@@ -33,12 +33,12 @@ class ParseEnviError(Exception):
 
 class Memmap:
     def __init__(
-        self, npy_path: Path, dtype: type = np.float64, mode: str = "r", shape: tuple[int, ...] | None = None
+        self, npy_path: Path, shape: tuple[int, ...] | None = None, dtype: type = np.float64, mode: str = "r"
     ):
         self.npy_path = npy_path
         self.shape = shape
-        self.mode = mode
         self.dtype = dtype
+        self.mode = mode
         self.array: np.memmap[Any, Any] | None = None
         self.is_open = False
 
@@ -118,26 +118,6 @@ def open_envi_hsi_as_np_memmap(
     img_hdr_path, img_data_path = resolve_img_paths(img_hdr_path, img_data_path)
     spy_img: Any = envi.open(img_hdr_path, img_data_path)
     return spy_img.open_memmap(writable=writable)
-
-
-def open_envi_hsi_as_memmap(
-    img_hdr_path: Path | None = None,
-    img_data_path: Path | None = None,
-    npy_save_folder: Path | None = None,
-    npy_filename: str | None = None,
-):
-    img_hdr_path, img_data_path = resolve_img_paths(img_hdr_path, img_data_path)
-    npy_save_folder = img_data_path.parent if npy_save_folder is None else npy_save_folder
-    npy_filename = img_data_path.name + ".npy" if npy_filename is None else npy_filename
-    npy_path = npy_save_folder / npy_filename
-    hsi_memmap = Memmap(npy_path=npy_path, mode="w+")
-    np_memmap = open_envi_hsi_as_np_memmap(img_hdr_path=img_hdr_path, img_data_path=img_data_path, writable=True)
-    hsi_memmap.dtype = np_memmap.dtype
-    hsi_memmap.shape = np_memmap.shape
-    hsi_memmap.open_array()
-    hsi_memmap.array = np_memmap
-    del np_memmap
-    return hsi_memmap
 
 
 def get_wavelengths(img_hdr_path: Path):

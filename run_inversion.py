@@ -13,14 +13,7 @@ enforce_venv(__file__)
 import numpy as np
 from pathlib import Path
 from modules import hsi_io
-from modules.hsi_processing import hsi_to_sRGB_inplace_mp
-
-"""
-from tqdm import tqdm
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from multiprocessing import Process, Manager
-from modules import hsi_io, prosail_data
-"""
+from modules.hsi_processing import hsi_to_sRGB_mp
 
 
 def main():
@@ -39,19 +32,18 @@ def main():
     assert np.allclose(uas_hsi_small_wavelengths, uas_hsi_large_wavelengths)
     wavelengths = uas_hsi_small_wavelengths
 
-    uas_hsi_small = hsi_io.open_envi_hsi_as_memmap(
-        uas_hsi_small_hdr, uas_hsi_small_img, output_folder, "uas_hsi_small.npy"
+    uas_hsi_small = hsi_io.open_envi_hsi_as_np_memmap(
+        img_hdr_path=uas_hsi_small_hdr, img_data_path=uas_hsi_small_img, writable=False
     )
-    """
-    uas_hsi_large = hsi_io.open_envi_hsi_as_memmap(
-        uas_hsi_large_hdr, uas_hsi_large_img, output_folder, "uas_hsi_large.npy"
-    )
-    """
-    assert uas_hsi_small.array is not None
-    hsi_to_sRGB_inplace_mp(
-        uas_hsi_small.array, wavelengths, wavelengths_resample_interval=1, num_threads=7, max_bytes=int(1e9)
-    )
-    uas_hsi_small.close_array()
+    h, w, _ = uas_hsi_small.shape
+    with hsi_io.Memmap(
+        output_folder / "uas_rgb_small.npy", shape=(h, w, 3), dtype=np.uint8, mode="w+"
+    ) as uas_rgb_small:
+        if uas_rgb_small.array is not None:
+            hsi_to_sRGB_mp(
+                uas_hsi_small, uas_rgb_small.array, original_wavelengths=wavelengths, num_threads=8, max_bytes=int(1e9)
+            )
+    del uas_hsi_small
 
 
 def get_project_folder():
