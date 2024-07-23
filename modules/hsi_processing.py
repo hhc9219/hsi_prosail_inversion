@@ -141,7 +141,7 @@ def split_img_by_max_bytes(src: np.ndarray, max_bytes: int):
 
 
 def _process_sub_chunk(
-    img_func: Callable[[np.ndarray, Any], np.ndarray],
+    img_func: Callable[..., np.ndarray],
     sub_chunk: np.ndarray,
     sub_chunk_num: int,
     output_queue: Queue,
@@ -151,7 +151,7 @@ def _process_sub_chunk(
     output_queue.put([sub_chunk_num, img_func(sub_chunk, *args, **kwargs)])
 
 
-def make_img_func_mp(img_func: Callable[[np.ndarray, Any], np.ndarray]):
+def make_img_func_mp(img_func: Callable[..., np.ndarray]):
 
     def mp_img_func(
         src: np.ndarray, dst: np.ndarray, num_threads: int, max_bytes, show_progress: bool = True, *args, **kwargs

@@ -6,7 +6,7 @@ from pathlib import Path
 from modules.context_manager import Context
 
 def main():
-    with Context(data_filename="environment_config.json") as project:
+    with Context(file=__file__, data_filename="environment_config.json") as project:
         if project.data:
             print(
                 "\nThe installation process has already been run.\n"
@@ -158,7 +158,7 @@ def install_prosail(project_context: Context):
     if not prosail_folder.exists():
         raise InstallProsailError("\nProsail folder was not installed at the expected location.\n")
     command = f"{project_context.data["venv_python"]} {prosail_folder / "setup.py"} install"
-    with Context(prosail_folder):
+    with Context(file=__file__, folder=prosail_folder):
         try:
             run_subprocess(command)
         except SubprocessError as e:

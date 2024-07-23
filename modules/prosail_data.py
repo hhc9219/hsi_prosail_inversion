@@ -170,7 +170,7 @@ class ProsailData(DynamicData):
         if result.success:
             self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL = result.x
             self.execute()
-        return result
+        return result.success
 
 
 """

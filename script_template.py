@@ -3,9 +3,9 @@ Description: A template for scripts in this repository.
 Email: hhc9219@rit.edu
 """
 
-from modules.context_manager import enforce_venv
+from modules.environment_manager import get_persistent_config_data
 
-enforce_venv(__file__)
+THREADS, MEMORY, HSI_CONFIG, PROJECT_FOLDER, OUTPUT_FOLDER = get_persistent_config_data(__file__)
 
 # Imports
 
