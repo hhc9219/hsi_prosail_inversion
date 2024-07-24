@@ -1,7 +1,7 @@
 import colour
 import numpy as np
 from tqdm import tqdm
-from multiprocessing import Process, Queue
+from multiprocessing import Process, shared_memory
 from typing import Callable, Any
 
 NDArrayFloat = np.ndarray[Any, np.dtype[np.float32 | np.float64]]
@@ -70,7 +70,7 @@ class ColorConverter:
         elif hsi.ndim == 2:
             ax = 1
         else:
-            ValueError("src array must be either 2D or 3D.")
+            raise ValueError("src array must be either 2D or 3D.")
         sRGB = np.apply_along_axis(func1d=self.reflectances_to_sRGB_float, axis=ax, arr=hsi)
         return sRGB
 
@@ -86,13 +86,10 @@ def get_img_characteristics(src: np.ndarray):
         n = h * w
     elif nd == 2:
         h, d = src.shape
-        n = h
-        w = 0
+        n, w = h, 0
     elif nd == 1:
         d = src.shape[0]
-        n = 1
-        h = 0
-        w = 0
+        n, h, w = 1, 0, 0
     else:
         raise ValueError("src ndim is not 1, 2, or 3")
     dt = src.dtype
@@ -117,7 +114,7 @@ def split_img_by_num_parts(src: np.ndarray, num_parts: int):
     elif nd == 2:
         flattened_view = src
     else:
-        ValueError("src array must be either 2D or 3D.")
+        raise ValueError("src array must be either 2D or 3D.")
     num_per_part = (n + num_parts - 1) // num_parts
     start = 0
     for i in range(num_parts - 1):
@@ -127,11 +124,23 @@ def split_img_by_num_parts(src: np.ndarray, num_parts: int):
     yield flattened_view[start:]
 
 
+def split_img_by_num_parts_2d_slices(src: np.ndarray, num_parts: int):
+    h, w, d, dt, nd, s, n = get_img_characteristics(src=src)
+    assert nd == 2
+    num_per_part = (n + num_parts - 1) // num_parts
+    start = 0
+    for i in range(num_parts - 1):
+        end = start + num_per_part
+        yield slice(start, end)
+        start = end
+    yield slice(start, None)
+
+
 def get_num_parts_from_max_bytes(src: np.ndarray, max_bytes: int):
     h, w, d, dt, nd, s, n = get_img_characteristics(src=src)
     bytes_per_pixel = d * src.itemsize
     max_pixels_per_part = max_bytes // bytes_per_pixel
-    num_parts = n // max_pixels_per_part
+    num_parts = -(-n // max_pixels_per_part)
     return num_parts
 
 
@@ -142,14 +151,39 @@ def split_img_by_max_bytes(src: np.ndarray, max_bytes: int):
 
 def _process_sub_chunk(
     img_func: Callable[..., np.ndarray],
-    sub_chunk: np.ndarray,
-    sub_chunk_num: int,
-    output_queue: Queue,
+    sub_chunk_slice: slice,
+    src_chunk_shm_name: str,
+    dst_chunk_shm_name: str,
+    src_chunk_shm_a_shape: tuple,
+    src_dtype: np.dtype,
+    dst_chunk_shm_a_shape: tuple,
+    dst_dtype: np.dtype,
     *args,
-    **kwargs
+    **kwargs,
 ):
-    # Call img_func, pass sub chunk, add result to queue
-    output_queue.put([sub_chunk_num, img_func(sub_chunk, *args, **kwargs)])
+    # Load
+    existing_src_chunk_shm = shared_memory.SharedMemory(name=src_chunk_shm_name)
+    existing_dst_chunk_shm = shared_memory.SharedMemory(name=dst_chunk_shm_name)
+    existing_src_chunk_shm_a = np.ndarray(
+        shape=src_chunk_shm_a_shape, dtype=src_dtype, buffer=existing_src_chunk_shm.buf
+    )
+    existing_dst_chunk_shm_a = np.ndarray(
+        shape=dst_chunk_shm_a_shape, dtype=dst_dtype, buffer=existing_dst_chunk_shm.buf
+    )
+
+    try:
+        # Call img_func
+        existing_dst_chunk_shm_a[sub_chunk_slice] = img_func(
+            existing_src_chunk_shm_a[sub_chunk_slice], *args, **kwargs
+        )
+    except Exception as e:
+        print(f"An error occurred while processing a sub-section of the image: {e}")
+    finally:
+        # Cleanup
+        del existing_src_chunk_shm_a
+        del existing_dst_chunk_shm_a
+        existing_src_chunk_shm.close()
+        existing_dst_chunk_shm.close()
 
 
 def make_img_func_mp(img_func: Callable[..., np.ndarray]):
@@ -181,68 +215,78 @@ def make_img_func_mp(img_func: Callable[..., np.ndarray]):
         # Use bytes per pixel of src and dst to determine how many chunks need to be loaded into memory independently
         num_parts = get_num_parts_from_max_bytes(src=src if bpp_src > bpp_dst else dst, max_bytes=max_bytes)
 
-        # Create a queue to store intermittent chunk results
-        output_queue = Queue()
+        # Create shared memory arrays
+        first_chunk_src = next(split_img_by_num_parts(src=src, num_parts=num_parts))
+        first_chunk_dst = next(split_img_by_num_parts(src=dst, num_parts=num_parts))
+        src_chunk_shm = shared_memory.SharedMemory(create=True, size=first_chunk_src.nbytes)
+        dst_chunk_shm = shared_memory.SharedMemory(create=True, size=first_chunk_dst.nbytes)
+        src_chunk_shm_a = np.ndarray(first_chunk_src.shape, dtype=dt_src, buffer=src_chunk_shm.buf)
+        dst_chunk_shm_a = np.ndarray(first_chunk_dst.shape, dtype=dt_dst, buffer=dst_chunk_shm.buf)
+        src_chunk_shm_name = src_chunk_shm.name
+        dst_chunk_shm_name = dst_chunk_shm.name
 
-        # Iteratively yield chunked views of the src and dst
-        for chunk_src, chunk_dst in zip(
-            split_img_by_num_parts(src=src, num_parts=num_parts), split_img_by_num_parts(src=dst, num_parts=num_parts)
-        ):
-
-            # Split chunk_src into sub chunks for each process, load all sub chunks into memory as independent arrays
-            sub_chunks = [
-                sub_chunk.copy() for sub_chunk in split_img_by_num_parts(src=chunk_src, num_parts=num_threads)
-            ]
-
-            # Spawn processes to compute the result for each sub chunk
-            sub_chunk_num = 0
-            processes: list[Process] = []
-            for sub_chunk in sub_chunks:
-                process = Process(
-                    target=_process_sub_chunk,
-                    args=(img_func, sub_chunk, sub_chunk_num, output_queue, *args),
-                    kwargs=kwargs,
-                )
-                processes.append(process)
-                process.start()
-                sub_chunk_num += 1
-
-            # Free sub chunks from memory
-            del sub_chunks[:]
-
-            # Retrieve and store sub chunk processing results in the correct order
-            output_results = [None] * num_threads
-            for _ in range(num_threads):
-                result = output_queue.get()
-                output_results[result[0]] = result[1]
-
-            # Free all process resources
-            for p in processes:
-                p.join()
-                p.close()
-
-            # Concatenate sub chunk processing results and copy to the chunk_dst
-            chunk_dst[:] = np.concatenate(output_results, axis=0, dtype=dt_dst)  # type: ignore
-
-            # Free sub chunk processing results from memory
-            del output_results[:]
-
-            # Write changes to the chunk_dst and free memory
-            if isinstance(chunk_dst, np.memmap):
-                chunk_dst.flush()
-
-            # Update the progress bar to reflect the number of pixels processed within the chunk
-            if show_progress:
+        try:
+            # Iteratively yield chunked views of the src and dst
+            for chunk_src, chunk_dst in zip(
+                split_img_by_num_parts(src=src, num_parts=num_parts),
+                split_img_by_num_parts(src=dst, num_parts=num_parts),
+            ):
+                # Copy chunk_src to shared memory src
                 chunk_n, _ = chunk_src.shape
-                progress_bar.update(chunk_n)
+                src_chunk_shm_a[:chunk_n] = chunk_src[:chunk_n]
 
-        # Ensure the Queue resources are freed and the process terminated
-        output_queue.close()
-        output_queue.join_thread()
+                # Spawn processes to compute the result for each sub chunk
+                processes: list[Process] = []
+                for sub_chunk_slice in split_img_by_num_parts_2d_slices(src=chunk_src, num_parts=num_threads):
+                    process = Process(
+                        target=_process_sub_chunk,
+                        args=(
+                            img_func,
+                            sub_chunk_slice,
+                            src_chunk_shm_name,
+                            dst_chunk_shm_name,
+                            first_chunk_src.shape,
+                            dt_src,
+                            first_chunk_dst.shape,
+                            dt_dst,
+                            *args,
+                        ),
+                        kwargs=kwargs,
+                    )
+                    processes.append(process)
+                    process.start()
 
-        # Cleanup and close the progress bar
-        if show_progress:
-            progress_bar.close()
+                # Join and free all process resources
+                for p in processes:
+                    p.join()
+                    p.close()
+
+                # Copy shared memory dst to chunk_dst
+                chunk_dst[:chunk_n] = dst_chunk_shm_a[:chunk_n]
+
+                # Write changes to the chunk_dst and free memory
+                if isinstance(chunk_dst, np.memmap):
+                    chunk_dst.flush()
+
+                # Update the progress bar to reflect the number of pixels processed within the chunk
+                if show_progress:
+                    progress_bar.update(chunk_n)
+
+        except Exception as e:
+            print(f"An error occured while multiprocessing the image: {e}")
+
+        finally:
+            # Shared memory cleanup
+            del src_chunk_shm_a
+            del dst_chunk_shm_a
+            src_chunk_shm.close()
+            dst_chunk_shm.close()
+            src_chunk_shm.unlink()
+            dst_chunk_shm.unlink()
+
+            # Cleanup and close the progress bar
+            if show_progress:
+                progress_bar.close()
 
     return mp_img_func
 
