@@ -213,7 +213,7 @@ def make_img_func_mp(img_func: Callable[..., np.ndarray]):
             progress_bar = tqdm(total=n_src, desc="Processing Pixels")
 
         # Use bytes per pixel of src and dst to determine how many chunks need to be loaded into memory independently
-        num_parts = get_num_parts_from_max_bytes(src=src if bpp_src > bpp_dst else dst, max_bytes=max_bytes)
+        num_parts = get_num_parts_from_max_bytes(src=src if bpp_src > bpp_dst else dst, max_bytes=(max_bytes // 2))
 
         # Create shared memory arrays
         first_chunk_src = next(split_img_by_num_parts(src=src, num_parts=num_parts))
