@@ -148,6 +148,7 @@ def _process_sub_chunk(
     *args,
     **kwargs
 ):
+    # Call img_func, pass sub chunk, add result to queue
     output_queue.put([sub_chunk_num, img_func(sub_chunk, *args, **kwargs)])
 
 
@@ -156,60 +157,90 @@ def make_img_func_mp(img_func: Callable[..., np.ndarray]):
     def mp_img_func(
         src: np.ndarray, dst: np.ndarray, num_threads: int, max_bytes, show_progress: bool = True, *args, **kwargs
     ):
+        # Free up memory that may be occupied by the dst
         if isinstance(dst, np.memmap):
             dst.flush()
 
+        # Get src and dst image characteristics
         h_src, w_src, d_src, dt_src, nd_src, s_src, n_src = get_img_characteristics(src=src)
         h_dst, w_dst, d_dst, dt_dst, nd_dst, s_dst, n_dst = get_img_characteristics(src=dst)
         bpp_src, bpp_dst = d_src * src.itemsize, d_dst * dst.itemsize
+
+        # Assert src and dst are both 3D
         assert nd_src == 3
         assert nd_dst == 3
+
+        # Assert src and dst have the same height and width
         assert h_src == h_dst
         assert w_src == w_dst
 
+        # Create a progress bar that updates with each processed chunk
         if show_progress:
             progress_bar = tqdm(total=n_src, desc="Processing Pixels")
-        output_queue = Queue()
+
+        # Use bytes per pixel of src and dst to determine how many chunks need to be loaded into memory independently
         num_parts = get_num_parts_from_max_bytes(src=src if bpp_src > bpp_dst else dst, max_bytes=max_bytes)
 
+        # Create a queue to store intermittent chunk results
+        output_queue = Queue()
+
+        # Iteratively yield chunked views of the src and dst
         for chunk_src, chunk_dst in zip(
             split_img_by_num_parts(src=src, num_parts=num_parts), split_img_by_num_parts(src=dst, num_parts=num_parts)
         ):
+
+            # Split chunk_src into sub chunks for each process, load all sub chunks into memory as independent arrays
             sub_chunks = [
                 sub_chunk.copy() for sub_chunk in split_img_by_num_parts(src=chunk_src, num_parts=num_threads)
             ]
 
+            # Spawn processes to compute the result for each sub chunk
             sub_chunk_num = 0
+            processes: list[Process] = []
             for sub_chunk in sub_chunks:
-                p = Process(
+                process = Process(
                     target=_process_sub_chunk,
                     args=(img_func, sub_chunk, sub_chunk_num, output_queue, *args),
                     kwargs=kwargs,
                 )
-                p.start()
+                processes.append(process)
+                process.start()
                 sub_chunk_num += 1
-            del sub_chunks
 
+            # Free sub chunks from memory
+            del sub_chunks[:]
+
+            # Retrieve and store sub chunk processing results in the correct order
             output_results = [None] * num_threads
             for _ in range(num_threads):
                 result = output_queue.get()
                 output_results[result[0]] = result[1]
 
-            if not output_queue.empty():
-                raise RuntimeError("Multiprocess output queue was not completely emptied.")
+            # Free all process resources
+            for p in processes:
+                p.join()
+                p.close()
 
+            # Concatenate sub chunk processing results and copy to the chunk_dst
             chunk_dst[:] = np.concatenate(output_results, axis=0, dtype=dt_dst)  # type: ignore
-            del output_results
+
+            # Free sub chunk processing results from memory
+            del output_results[:]
+
+            # Write changes to the chunk_dst and free memory
             if isinstance(chunk_dst, np.memmap):
                 chunk_dst.flush()
 
+            # Update the progress bar to reflect the number of pixels processed within the chunk
             if show_progress:
                 chunk_n, _ = chunk_src.shape
                 progress_bar.update(chunk_n)
 
+        # Ensure the Queue resources are freed and the process terminated
         output_queue.close()
         output_queue.join_thread()
 
+        # Cleanup and close the progress bar
         if show_progress:
             progress_bar.close()
 
