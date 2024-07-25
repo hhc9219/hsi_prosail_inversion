@@ -5,10 +5,12 @@ from .typedefs import NDArrayFloat
 
 
 def invert_prosail(hsi_geo_mask_stack: NDArrayFloat, wavelengths: NDArrayFloat, print_errors: bool):
-    if hsi_geo_mask_stack.ndim == 3:
-        raise NotImplementedError("invert_prosail currently only handles a single row of pixels.")
-    num_pixels = hsi_geo_mask_stack.shape[0]
+    if hsi_geo_mask_stack.ndim != 2:
+        raise NotImplementedError("invert_prosail currently only handles a single row of pixels (2D Array).")
+    num_pixels, num_channels = hsi_geo_mask_stack.shape
     num_hsi_channels = len(wavelengths)
+    if num_channels != num_hsi_channels + 4:
+        raise RuntimeError("The provided hsi_geo_mask_stack has the incorrect number of channels.")
     hsi = hsi_geo_mask_stack[:, :num_hsi_channels]
     geo = hsi_geo_mask_stack[
         :, num_hsi_channels:-1
