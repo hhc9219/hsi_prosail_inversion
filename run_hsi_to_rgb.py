@@ -1,6 +1,6 @@
 """
 A script to accurately convert a ENVI hyperspectral image to a sRGB image.
-By default this script uses a D65 illuminant and the CIE 1931 2 Degree Standard Observer CMF.
+By default this script uses a D65 illuminant and the CIE 1931 2 Degree Standard Observer CMFs.
 
 hhc9219@rit.edu
 """
