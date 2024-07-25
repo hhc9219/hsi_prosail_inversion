@@ -35,8 +35,8 @@ def main():
                 hsi_geo_mask_stack_src=hsi,
                 inversion_result_dst=inversion_result.array,
                 wavelengths=wavelengths,
-                num_threads=2,
-                max_bytes=int(0.3e9),
+                num_threads=9,
+                max_bytes=int(0.5e9),
             )
 
     del hsi

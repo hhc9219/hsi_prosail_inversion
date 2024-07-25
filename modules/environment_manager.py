@@ -3,6 +3,16 @@ from pathlib import Path
 from .context_manager import Context
 
 
+def get_notebook_path(notebook_name:str):
+    project_name = "hsi_prosail_inversion"
+    notebook_path = Path(".").resolve() / notebook_name
+    if notebook_path.parent.name != project_name:
+        raise RuntimeError(f"\nCurrent working directory must match the repository root folder: {project_name}\n")
+    if not notebook_path.exists():
+        raise RuntimeError(f"\nThe notebook:\n\n{notebook_path}\n\nWas not found.\n")
+    return str(notebook_path)
+
+
 def is_using_python_exe(python_exe_path: str | Path):
     """
     Checks if python is being run from the correct executable.
@@ -74,6 +84,7 @@ def get_hsi_config(file:str):
         print(f"Full path: {hsi_config.context_folder / "hsi_config.json"}\n")
         sys.exit(0)
     return hsi_config_info
+
 
 def get_persistent_config_data(file:str):
     threads, memory = get_resource_values(file)
