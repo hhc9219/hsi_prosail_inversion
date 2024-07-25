@@ -33,11 +33,17 @@ def main():
                 hsi_src=hsi,
                 rgb_dst=rgb_result.array,
                 original_wavelengths=wavelengths,
-                num_threads=8,
-                max_bytes=int(1e9),
+                num_threads=9,
+                max_bytes=int(0.5e9),
             )
 
     del hsi
+
+    if input("Convert rgb_result.npy to rgb_result.png? y/n: ") == "y":
+        from matplotlib import pyplot as plt
+
+        rgb = np.load(str(OUTPUT_FOLDER / "rgb_result.npy"))
+        plt.imsave(str(OUTPUT_FOLDER / "rgb_result.png"), rgb)
 
 
 if __name__ == "__main__":
