@@ -1,50 +1,9 @@
-"""
-A Script to invert the prosail radiative transfer model using the Nelder-Mead simplex method
-on a pixel by pixel basis for an ENVI hyperspectral image.
-
-hhc9219@rit.edu
-"""
-
-from modules.environment_manager import get_persistent_config_data
-
-THREADS, MEMORY, HSI_CONFIG, PROJECT_FOLDER, OUTPUT_FOLDER = get_persistent_config_data(__file__)
-
-# Imports
 import numpy as np
-from pathlib import Path
 from typing import Any
-from modules import hsi_io
-from modules.prosail_data import ProsailData
-from modules.hsi_processing import make_img_func_mp
+from .prosail_data import ProsailData
+from .img_processing import make_img_func_mp
 
 NDArrayFloat = np.ndarray[Any, np.dtype[np.float32 | np.float64]]
-
-
-def main():
-
-    img_name = input("Please enter the hsi to process from hsi_config.json: ")
-
-    hsi_hdr_path = Path(HSI_CONFIG[img_name]["hdr"])
-    hsi_img_path = Path(HSI_CONFIG[img_name]["img"])
-
-    wavelengths = hsi_io.get_wavelengths(hsi_hdr_path)
-
-    hsi = hsi_io.open_envi_hsi_as_np_memmap(img_hdr_path=hsi_hdr_path, img_data_path=hsi_img_path, writable=False)
-    h, w, _ = hsi.shape
-    with hsi_io.Memmap(
-        OUTPUT_FOLDER / "inversion_result.npy", shape=(h, w, 9), dtype=np.float64, mode="w+"
-    ) as inversion_result:
-        if inversion_result.array is not None:
-
-            invert_prosail_mp(
-                hsi_geo_mask_stack_src=hsi,
-                inversion_result_dst=inversion_result.array,
-                wavelengths=wavelengths,
-                num_threads=2,
-                max_bytes=int(0.3e9),
-            )
-
-    del hsi
 
 
 def invert_prosail(hsi_geo_mask_stack: NDArrayFloat, wavelengths: NDArrayFloat, print_errors: bool):
@@ -106,7 +65,3 @@ def invert_prosail_mp(
         wavelengths=wavelengths,
         print_errors=print_errors,
     )
-
-
-if __name__ == "__main__":
-    main()

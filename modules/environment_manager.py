@@ -76,10 +76,8 @@ def get_hsi_config(file:str):
     return hsi_config_info
 
 def get_persistent_config_data(file:str):
-    enforce_venv(file)
     threads, memory = get_resource_values(file)
     hsi_config = get_hsi_config(file)
     project_folder = get_project_folder(file)
     output_folder = project_folder / "output"
-    print("\nPersistent configuration data was successfully loaded.\n")
     return threads, memory, hsi_config, project_folder, output_folder
