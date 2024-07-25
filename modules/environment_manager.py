@@ -29,12 +29,20 @@ def enforce_venv(
             if venv_python_data_key in project.data:
                 venv_python = project.data[venv_python_data_key]
                 if not is_using_python_exe(venv_python):
-                    print(
-                        "\nYou are using the incorrect python executable to run this script.\n"
-                        "Please use the following command to run this script correctly:\n"
-                        f"\n{venv_python} {Path(file).name}\n"
-                    )
-                    sys.exit(0)
+                    file_path = Path(file)
+                    if file_path.suffix == ".ipynb":
+                        print(
+                            "\nYou are using the incorrect python executable to run this notebook.\n"
+                            "Please change your kernel to use the following python executable:\n"
+                            f"\n{venv_python}\n"
+                        )
+                    else:
+                        print(
+                            "\nYou are using the incorrect python executable to run this script.\n"
+                            "Please use the following command to run this script correctly:\n"
+                            f"\n{venv_python} {file_path.name}\n"
+                        )
+                        sys.exit(0)
             else:
                 raise ValueError(
                     f"\n{venv_python_data_key} was not identified as a key in {data_filename}\n"
