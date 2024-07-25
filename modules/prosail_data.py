@@ -9,10 +9,8 @@ import prosail
 import numpy as np
 from typing import Any
 from scipy import optimize
-
 from .dynamic_data import DynamicData
-
-NDArrayFloat = np.ndarray[Any, np.dtype[np.float32 | np.float64]]
+from .typedefs import NDArrayFloat
 
 
 class ProsailData(DynamicData):

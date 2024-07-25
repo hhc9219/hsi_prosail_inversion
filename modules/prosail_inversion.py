@@ -1,9 +1,7 @@
 import numpy as np
-from typing import Any
 from .prosail_data import ProsailData
 from .img_processing import make_img_func_mp
-
-NDArrayFloat = np.ndarray[Any, np.dtype[np.float32 | np.float64]]
+from .typedefs import NDArrayFloat
 
 
 def invert_prosail(hsi_geo_mask_stack: NDArrayFloat, wavelengths: NDArrayFloat, print_errors: bool):

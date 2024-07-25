@@ -1,9 +1,7 @@
 import colour
 import numpy as np
-from typing import Any
 from .img_processing import float_img_to_dc, make_img_func_mp
-
-NDArrayFloat = np.ndarray[Any, np.dtype[np.float32 | np.float64]]
+from .typedefs import NDArrayFloat
 
 
 class ColorConverter:

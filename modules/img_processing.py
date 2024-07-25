@@ -1,8 +1,7 @@
 import numpy as np
 from multiprocessing import Process, shared_memory
-from typing import Callable, Any
-
-NDArrayFloat = np.ndarray[Any, np.dtype[np.float32 | np.float64]]
+from typing import Callable
+from .typedefs import NDArrayFloat
 
 
 def float_img_to_dc(src: NDArrayFloat):
