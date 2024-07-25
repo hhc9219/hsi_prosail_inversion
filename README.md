@@ -9,7 +9,7 @@
 
 #### Hardware
 
-* Multiple Thread CPU
+* Multiple Thread CPU ( Minimum of 3 )
 * Large RAM Capacity
 
 #### Hyperspectral Images
