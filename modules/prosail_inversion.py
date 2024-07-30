@@ -49,6 +49,7 @@ def invert_prosail(
         except Exception as e:
             if print_errors:
                 print(f"Pixel {i} did not invert successfully. {e}")
+        finally:
             pd.N, pd.CAB, pd.CCX, pd.EWT, pd.LMA, pd.LAI, pd.PSOIL, pd.SZA, pd.VZA, pd.RAA = initial_values
             pd.execute()
     return inversion_result

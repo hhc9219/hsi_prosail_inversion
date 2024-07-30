@@ -44,7 +44,7 @@ def main():
                 is_adaptive=True,
                 num_threads=num_threads,
                 max_bytes=max_bytes,
-                print_errors=True,
+                print_errors=False,
             )
 
     del hsi

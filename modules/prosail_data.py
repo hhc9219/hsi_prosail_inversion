@@ -38,11 +38,11 @@ class ProsailData(DynamicData):
         LIDFA=-1,
         LIDFB=0,
         SZA_MIN=0,
-        SZA_MAX=np.pi / 2,
+        SZA_MAX=90,
         VZA_MIN=0,
-        VZA_MAX=np.pi / 2,
+        VZA_MAX=90,
         RAA_MIN=0,
-        RAA_MAX=np.pi * 2,
+        RAA_MAX=360,
         FACTOR="HDR",
     ):
         super().__init__()
@@ -80,8 +80,8 @@ class ProsailData(DynamicData):
         self.LAI = None
         self.PSOIL = None
         self.HSPOT = None
-        self.SZA = None
-        self.VZA = None
+        self.SZA = 0
+        self.VZA = 0
         self.RAA = None
         avg = lambda a, b: 0.5 * (a + b)
         self.set_funcs(
@@ -92,8 +92,6 @@ class ProsailData(DynamicData):
             CCX=lambda CCX_MIN, CCX_MAX: avg(CCX_MIN, CCX_MAX),
             LAI=lambda LAI_MIN, LAI_MAX: avg(LAI_MIN, LAI_MAX),
             PSOIL=lambda PSOIL_MIN, PSOIL_MAX: avg(PSOIL_MIN, PSOIL_MAX),
-            SZA=lambda SZA_MIN, SZA_MAX: avg(SZA_MIN, SZA_MAX),
-            VZA=lambda VZA_MIN, VZA_MAX: avg(VZA_MIN, VZA_MAX),
             RAA=lambda RAA_MIN, RAA_MAX: avg(RAA_MIN, RAA_MAX),
         )
         self.execute()
