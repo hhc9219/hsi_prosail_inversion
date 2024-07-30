@@ -183,7 +183,7 @@ def install_requirements(project_context: Context):
     output_folder.mkdir(parents=True, exist_ok=True)
     print(
         "\nInstallation was successfully completed. Please run the following command in your terminal:\n"
-        f"\n{project_context.data['venv_python']} run_inversion.py\n"
+        f"\n{project_context.data['venv_python']} run_prosail_inversion.py\n"
     )
 
 
