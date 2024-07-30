@@ -30,16 +30,21 @@ def main():
     hsi = hsi_io.open_envi_hsi_as_np_memmap(img_hdr_path=hsi_hdr_path, img_data_path=hsi_img_path, writable=False)
     h, w, _ = hsi.shape
     with hsi_io.Memmap(
-        OUTPUT_FOLDER / "inversion_result.npy", shape=(h, w, 9), dtype=np.float64, mode="w+"
+        OUTPUT_FOLDER / "inversion_result.npy", shape=(h, w, 11), dtype=np.float64, mode="w+"
     ) as inversion_result:
         if inversion_result.array is not None:
 
             invert_prosail_mp(
-                hsi_geo_mask_stack_src=hsi,
+                hsi_src=hsi,
                 inversion_result_dst=inversion_result.array,
                 wavelengths=wavelengths,
+                atol_rmse_residual=0.05,
+                atol_wavelength=5,
+                black_threshold=1e-9,
+                is_adaptive=True,
                 num_threads=num_threads,
                 max_bytes=max_bytes,
+                print_errors=True,
             )
 
     del hsi
