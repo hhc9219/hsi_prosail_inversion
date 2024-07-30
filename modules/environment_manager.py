@@ -3,7 +3,7 @@ from pathlib import Path
 from .context_manager import Context
 
 
-def get_notebook_path(notebook_name:str):
+def get_notebook_path(notebook_name: str):
     project_name = "hsi_prosail_inversion"
     notebook_path = Path(".").resolve() / notebook_name
     if notebook_path.parent.name != project_name:
@@ -55,13 +55,13 @@ def enforce_venv(
             )
 
 
-def get_project_folder(file:str):
+def get_project_folder(file: str):
     with Context(file=file) as project:
         project_folder = project.context_folder
     return project_folder
 
 
-def get_resource_values(file:str) -> tuple[int, float]:
+def get_resource_values(file: str) -> tuple[int, float]:
     with Context(file=file, data_filename="resource_config.json") as resource_config:
         if not resource_config.data:
             cpu_thread_count = int(input("|SET| resource_config.json <- cpu_thread_count = "))
@@ -72,29 +72,31 @@ def get_resource_values(file:str) -> tuple[int, float]:
     return resource_values
 
 
-def get_hsi_config(file:str):
+def get_hsi_config(file: str):
     no_data = False
     with Context(file=file, data_filename="hsi_config.json") as hsi_config:
         if hsi_config.data:
             if "hsi_0_abv_name" in hsi_config.data:
                 print("\nThe template in the file, 'hsi_config.json' must be modified in order to complete setup.")
                 no_data = True
-            else:      
+            else:
                 hsi_config_info = hsi_config.data
         else:
             hsi_config.data = {
                 "hsi_0_abv_name": {"hdr": "/full/path/to/your/hsi_0.hdr", "img": "/full/path/to/your/hsi_0.img"},
                 "hsi_1_abv_name": {"hdr": "/full/path/to/your/hsi_1.hdr", "img": "/full/path/to/your/hsi_1.img"},
             }
-            print("\nPlease edit the template in the newly created file, 'hsi_config.json' in order to complete setup.")
+            print(
+                "\nPlease edit the template in the newly created file, 'hsi_config.json' in order to complete setup."
+            )
             no_data = True
     if no_data:
-        print(f"Full path: {hsi_config.context_folder / "hsi_config.json"}\n")
+        print(f"Full path: {hsi_config.context_folder / 'hsi_config.json'}\n")
         sys.exit(0)
     return hsi_config_info
 
 
-def get_persistent_config_data(file:str):
+def get_persistent_config_data(file: str):
     threads, memory = get_resource_values(file)
     hsi_config = get_hsi_config(file)
     project_folder = get_project_folder(file)
