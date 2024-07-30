@@ -4,8 +4,11 @@
 
 #### Software
 
-* Python 3.12.1  ( May support other versions as well. )
-* Windows  ( Supports other operating systems like Linux and Mac, in theory. )
+* Windows ( Supports other operating systems like Linux and Mac, in theory. )
+* Python 3.12.1 ( May support other versions as well. )
+* Git
+
+  Please ensure Python and Git are accessible in your system's path.
 
 #### Hardware
 
@@ -64,7 +67,7 @@ Additionally, do not modify a subkey name like "hdr" or "img" within the "hsi_co
 
 If your computer hardware allows for it, an easy speedup can be accomplished by increasing the number of threads and/or the amount of memory used for processing. This can be achieved by increasing the values within "resource_config.json" to a number that doesn't exceed your system's hardware resources.
 
-In order to reduce the processing time without using a smaller or different hyperspectral image, editing the fit_to_reflectances method of the ProsailData class may be the best place to start. This class is located in "modules/prosail_data.py". Specifically I'd look into modifying the call to scipy.optimize.minimize which implements the Nelder-Mead simplex method to invert the prosail parameters for a single pixel. Adjusting parameters such as "fatol" and "ratol" could significantly decrease the processing time.
+In order to reduce the processing time without using a smaller or different hyperspectral image, editing the fit_to_reflectances method of the ProsailData class may be the best place to start. This class is located in "modules/prosail_data.py". Specifically I'd look into modifying the call to scipy.optimize.minimize which implements the Nelder-Mead simplex method to invert the prosail parameters for a single pixel. Adjusting parameters such as "atol_rmse_residual" and "atol_wavelength" could significantly decrease the processing time.
 
 #### Other Issues
 
