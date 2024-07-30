@@ -5,25 +5,30 @@ import shutil
 from pathlib import Path
 from modules.context_manager import Context
 
+
 def main():
     with Context(file=__file__, data_filename="environment_config.json") as project:
         if project.data:
             print(
                 "\nThe installation process has already been run.\n"
                 "If you are having issues, please re-clone this repository and retry installation.\n"
-                )
+            )
         else:
             get_project_data(project_context=project)
             install_requirements(project_context=project)
 
+
 class SubprocessError(Exception):
     pass
+
 
 class InstallVenvError(Exception):
     pass
 
+
 class InstallProsailError(Exception):
     pass
+
 
 def get_sys_platform(allowed_platforms: list[str] | tuple[str, ...] | str | None = None):
     """
@@ -136,7 +141,7 @@ def install_venv(project_context: Context):
         raise InstallVenvError("\nVirtual environment python executable was not installed at the expected location.\n")
     if not venv_pip.exists():
         raise InstallVenvError("\nVirtual environment pip executable was not installed at the expected location.\n")
-    command = f"{venv_pip} install -r {project_context.context_folder / "requirements.txt"}"
+    command = f"{venv_pip} install -r {project_context.context_folder / 'requirements.txt'}"
     try:
         run_subprocess(command)
     except SubprocessError as e:
@@ -157,7 +162,7 @@ def install_prosail(project_context: Context):
         raise InstallProsailError(f"{e}")
     if not prosail_folder.exists():
         raise InstallProsailError("\nProsail folder was not installed at the expected location.\n")
-    command = f"{project_context.data["venv_python"]} {prosail_folder / "setup.py"} install"
+    command = f"{project_context.data['venv_python']} {prosail_folder / 'setup.py'} install"
     with Context(file=__file__, folder=prosail_folder):
         try:
             run_subprocess(command)
@@ -173,13 +178,13 @@ def install_requirements(project_context: Context):
     install_venv(project_context)
     install_prosail(project_context)
     hsi_folder = project_context.context_folder / "hsi"
-    output_folder =project_context.context_folder / "output"
+    output_folder = project_context.context_folder / "output"
     hsi_folder.mkdir(parents=True, exist_ok=True)
     output_folder.mkdir(parents=True, exist_ok=True)
     print(
         "\nInstallation was successfully completed. Please run the following command in your terminal:\n"
-        f"\n{project_context.data["venv_python"]} run_inversion.py\n"
-        )
+        f"\n{project_context.data['venv_python']} run_inversion.py\n"
+    )
 
 
 if __name__ == "__main__":
