@@ -42,11 +42,11 @@ class DynamicData:
             self.refresh_deps()
 
     def __getitem__(self, key: str):
-        return deepcopy(super().__getattribute__(key))
+        return deepcopy(self.__dict__[key])
 
     def __setitem__(self, key: str, value: Any):
         if key not in self.internal_keys:
-            super().__setattr__(key, value)
+            self.__dict__[key] = value
         else:
             raise KeyError("Internal keys may not be set with __setitem__ .")
 
@@ -140,8 +140,8 @@ class DynamicData:
     def execute(self, **data: Any):
         for key, deps in self.deps.items():
             if self.copy_args:
-                kwargs = {dep: deepcopy(super().__getattribute__(dep)) for dep in deps}
+                kwargs = {dep: deepcopy(self.__dict__[dep]) for dep in deps}
             else:
-                kwargs = {dep: super().__getattribute__(dep) for dep in deps}
+                kwargs = {dep: self.__dict__[dep] for dep in deps}
             kwargs.update(data)
-            super().__setattr__(key, self.funcs[key](**kwargs))
+            self.__dict__[key] = self.funcs[key](**kwargs)
