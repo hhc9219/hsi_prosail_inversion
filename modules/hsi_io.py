@@ -20,11 +20,14 @@ import spectral.io.envi as envi  # type:ignore
 from pathlib import Path
 from typing import Any
 
-import tkinter as tk
-from tkinter import filedialog
 
-root = tk.Tk()
-root.withdraw()
+try:
+    import tkinter as tk
+    from tkinter import filedialog
+    root = tk.Tk()
+    root.withdraw()
+except ImportError:
+    print("IO WARNING: Tkinter was not found on your system. Calls to open GUI file dialogs will fail.")
 
 
 class ParseEnviError(Exception):
