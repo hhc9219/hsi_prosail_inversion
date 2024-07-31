@@ -80,8 +80,8 @@ class ProsailData(DynamicData):
         self.LAI = None
         self.PSOIL = None
         self.HSPOT = None
-        self.SZA = 0
-        self.VZA = 0
+        self.SZA = 1e-9  # initial guess of about 0 degrees
+        self.VZA = 1e-9  # initial guess of about 0 degrees
         self.RAA = None
         avg = lambda a, b: 0.5 * (a + b)
         self.set_funcs(

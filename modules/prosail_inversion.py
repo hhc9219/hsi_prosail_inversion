@@ -39,11 +39,23 @@ def invert_prosail(
                     is_adaptive=is_adaptive,
                 )
                 inversion_result[i] = np.array(
-                    [float(success), pd.N, pd.CAB, pd.CCX, pd.EWT, pd.LMA, pd.LAI, pd.PSOIL, pd.SZA, pd.VZA, pd.RAA],
+                    [
+                        float(round(success)),
+                        pd.N,
+                        pd.CAB,
+                        pd.CCX,
+                        pd.EWT,
+                        pd.LMA,
+                        pd.LAI,
+                        pd.PSOIL,
+                        pd.SZA,
+                        pd.VZA,
+                        pd.RAA,
+                    ],
                     dtype=np.float64,
                 )
                 if not success:
-                    raise ProsailInversionError()
+                    raise ProsailInversionError("PROSAIL inversion did not succeed.")
             else:
                 inversion_result[i, 0] = 0.5  # for skipped black pixels success = 0.5
         except Exception as e:
