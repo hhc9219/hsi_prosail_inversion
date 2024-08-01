@@ -36,7 +36,7 @@ def invert_prosail(
             if np.mean(hsi[i]) > black_threshold:
                 r = np.mean(hsi[i][where_r])
                 nir = np.mean(hsi[i][where_nir])
-                ndvi = (nir - r) / (nir + r)
+                ndvi = (nir - r) / (nir + r) if not abs(nir + r) < 1e-9 else 0
                 if ndvi > ndvi_threshold:
                     success = pd.fit_to_reflectances(
                         wavelengths=wavelengths,
