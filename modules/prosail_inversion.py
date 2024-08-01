@@ -28,8 +28,7 @@ def invert_prosail(
         )
     where_r = (wavelengths > 400) & (wavelengths < 700)
     where_nir = (wavelengths > 700) & (wavelengths < 1100)
-    inversion_result = np.empty(shape=(num_pixels, 11), dtype=np.float64)
-    inversion_result[:, 0] = 0
+    inversion_result = np.zeros(shape=(num_pixels, 11), dtype=np.float64)
     pd = ProsailData()
     initial_values = pd.N, pd.CAB, pd.CCX, pd.EWT, pd.LMA, pd.LAI, pd.PSOIL, pd.SZA, pd.VZA, pd.RAA
     for i in range(num_pixels):

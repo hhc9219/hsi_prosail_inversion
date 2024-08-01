@@ -20,7 +20,7 @@ def main():
     img_name = input("Please enter the hsi to process from hsi_config.json: ")
 
     num_threads = max(THREADS - 3, 3)
-    max_bytes = max(int(MEMORY / 64 * 1e9), int(0.05e9))
+    max_bytes = max(int(MEMORY / 160 * 1e9), int(0.05e9))
 
     hsi_hdr_path = Path(HSI_CONFIG[img_name]["hdr"])
     hsi_img_path = Path(HSI_CONFIG[img_name]["img"])
@@ -38,15 +38,15 @@ def main():
                 hsi_src=hsi,
                 inversion_result_dst=inversion_result.array,
                 wavelengths=wavelengths,
-                atol_rmse_residual=0.05,
-                atol_wavelength=5,
-                maxiter_factor=200,
-                ndvi_threshold=0.1,
+                atol_rmse_residual=0.1,  # 0.1-0.01
+                atol_wavelength=10,  # 10-1
+                maxiter_factor=100,  # 100-200
                 black_threshold=1e-9,
-                is_adaptive=True,
+                ndvi_threshold=0.1,
+                is_adaptive=True,  # True
                 num_threads=num_threads,
                 max_bytes=max_bytes,
-                print_errors=False,
+                print_errors=True,
             )
 
     del hsi

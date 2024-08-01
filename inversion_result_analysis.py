@@ -58,12 +58,14 @@ def main():
 
     for name, inv_param in zip(param_names, inv_params):
         plt.figure()
-        plt.imshow(inv_param, cmap=CMAP)
+        plt.imshow(inv_param, cmap=CMAP, interpolation="none")
         plt.colorbar()
         title = name if name != "Success" else name + ": " + str(int(round(percent_successful * 100))) + "%"
         plt.title(title)
         plt.savefig(FIGURES_FOLDER / (name + ".png"))
         plt.close()
+
+    print("Saved result to output folder.")
 
 
 if __name__ == "__main__":
