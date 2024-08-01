@@ -40,6 +40,8 @@ def main():
                 wavelengths=wavelengths,
                 atol_rmse_residual=0.05,
                 atol_wavelength=5,
+                maxiter_factor=200,
+                ndvi_threshold=0.1,
                 black_threshold=1e-9,
                 is_adaptive=True,
                 num_threads=num_threads,

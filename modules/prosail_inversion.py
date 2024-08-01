@@ -13,7 +13,9 @@ def invert_prosail(
     wavelengths: NDArrayFloat,
     atol_rmse_residual: float,
     atol_wavelength: float,
+    maxiter_factor: int,
     black_threshold: float,
+    ndvi_threshold: float,
     is_adaptive: bool,
     print_errors: bool,
 ):
@@ -24,6 +26,8 @@ def invert_prosail(
         raise RuntimeError(
             "The provided hsi has the incorrect number of channels to match the number of provided wavelengths."
         )
+    where_r = (wavelengths > 400) & (wavelengths < 700)
+    where_nir = (wavelengths > 700) & (wavelengths < 1100)
     inversion_result = np.empty(shape=(num_pixels, 11), dtype=np.float64)
     inversion_result[:, 0] = 0
     pd = ProsailData()
@@ -31,31 +35,40 @@ def invert_prosail(
     for i in range(num_pixels):
         try:
             if np.mean(hsi[i]) > black_threshold:
-                success = pd.fit_to_reflectances(
-                    wavelengths=wavelengths,
-                    reflectances=hsi[i],
-                    atol_rmse_residual=atol_rmse_residual,
-                    atol_wavelength=atol_wavelength,
-                    is_adaptive=is_adaptive,
-                )
-                inversion_result[i] = np.array(
-                    [
-                        float(round(success)),
-                        pd.N,
-                        pd.CAB,
-                        pd.CCX,
-                        pd.EWT,
-                        pd.LMA,
-                        pd.LAI,
-                        pd.PSOIL,
-                        pd.SZA,
-                        pd.VZA,
-                        pd.RAA,
-                    ],
-                    dtype=np.float64,
-                )
-                if not success:
-                    raise ProsailInversionError("PROSAIL inversion did not succeed.")
+                r = np.mean(hsi[i][where_r])
+                nir = np.mean(hsi[i][where_nir])
+                ndvi = (nir - r) / (nir + r)
+                if ndvi > ndvi_threshold:
+                    success = pd.fit_to_reflectances(
+                        wavelengths=wavelengths,
+                        reflectances=hsi[i],
+                        atol_rmse_residual=atol_rmse_residual,
+                        atol_wavelength=atol_wavelength,
+                        maxiter_factor=maxiter_factor,
+                        is_adaptive=is_adaptive,
+                    )
+                    inversion_result[i] = np.array(
+                        [
+                            float(round(success)),
+                            pd.N,
+                            pd.CAB,
+                            pd.CCX,
+                            pd.EWT,
+                            pd.LMA,
+                            pd.LAI,
+                            pd.PSOIL,
+                            pd.SZA,
+                            pd.VZA,
+                            pd.RAA,
+                        ],
+                        dtype=np.float64,
+                    )
+                    if not success:
+                        raise ProsailInversionError("PROSAIL inversion did not succeed.")
+                else:
+                    inversion_result[i, 0] = (
+                        0.75  # for skipped pixels with ndvi less than ndvi_threshold success = 0.75
+                    )
             else:
                 inversion_result[i, 0] = 0.5  # for skipped black pixels success = 0.5
         except Exception as e:
@@ -73,7 +86,9 @@ def invert_prosail_mp(
     wavelengths: NDArrayFloat,
     atol_rmse_residual: float,
     atol_wavelength: float,
+    maxiter_factor: int,
     black_threshold: float,
+    ndvi_threshold: float,
     is_adaptive: bool,
     num_threads: int,
     max_bytes: int,
@@ -90,7 +105,9 @@ def invert_prosail_mp(
         wavelengths=wavelengths,
         atol_rmse_residual=atol_rmse_residual,
         atol_wavelength=atol_wavelength,
+        maxiter_factor=maxiter_factor,
         black_threshold=black_threshold,
+        ndvi_threshold=ndvi_threshold,
         is_adaptive=is_adaptive,
         print_errors=print_errors,
     )

@@ -136,6 +136,7 @@ class ProsailData(DynamicData):
         reflectances: NDArrayFloat,
         atol_rmse_residual=0.01,
         atol_wavelength=2.5,
+        maxiter_factor=200,
         is_adaptive=True,
     ):
         def fun(x, *args):
@@ -163,7 +164,12 @@ class ProsailData(DynamicData):
                 (self.VZA_MIN, self.VZA_MAX),
                 (self.RAA_MIN, self.RAA_MAX),
             ),
-            options={"adaptive": is_adaptive, "fatol": atol_rmse_residual, "xatol": atol_wavelength},
+            options={
+                "adaptive": is_adaptive,
+                "fatol": atol_rmse_residual,
+                "xatol": atol_wavelength,
+                "maxiter": maxiter_factor * 10,
+            },
         )
         if result.success:
             self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL, self.SZA, self.VZA, self.RAA = (
