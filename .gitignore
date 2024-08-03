@@ -3,6 +3,7 @@ external_packages/
 hsi/*
 output/*
 /*.json
+data/processed/*.npy
 
 # Nonessentials
 .vscode
