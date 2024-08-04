@@ -33,9 +33,9 @@ Run this script with your global python interpreter to automate the installation
 
 Run this script using the automatically created virtual environment and follow the dialogue to invert the PROSAIL radiative transfer model using the Nelder Mead Simplex method for an ENVI hyperspectral image.
 
-### inversion_result_analysis.ipynb
+### plot_inversion_results.py
 
-The "inversion_result_analysis.ipynb" jupyter notebook shows an example of how to load a inversion result and displays the channels corresponding to the various parameters. Please note that in order to run this file you should set your jupyter kernel to use the virtual environment's python located in "venv".
+The "plot_inversion_results.py" script loads an inversion result and creates figures in the output folder which depict the values obtained for the inversion parameters.
 
 ### run_hsi_to_rgb.py
 
@@ -48,6 +48,12 @@ This folder will be populated with script outputs and results.
 ### hsi folder
 
 The "hsi" folder provides a convenient place to optionally store your hyperspectral images. There's nothing particualrarly important about it, but it's contents are included in the .gitignore, which will ensure potentially large hyperspectral images aren't pushed to the remote repository.
+
+### vp_mapping.ipynb
+
+**Important:** Check the info at the top of this file in order to run, it does not use the same python environment that the install script sets up.
+
+This python notebook contains a variety of processing steps to map the validation points or ground truths for the 2019 hog island field campaign to pixel locations within the uas hyperspectral images. Also, this notebook consolidates the solar and sensor geometry into an image like format containg spatial information for the validation points along with the corresponding geometries. These files are saved as "vp_geo_hog_island_2019_0.npy" and "vp_geo_hog_island_2019_1.npy" by the program. The channels of these arrays are: solar zenith, sensor zenith, and relative azimuth. The values are in degrees and NaNs are present where the geometry data has not been processed yet.
 
 ## Troubleshooting
 
@@ -77,9 +83,9 @@ If issues persist, a more complicated problem may need to be addressed.
 
 ## Showcase
 
-### run_hsi_to_rgb.py
+### run_hsi_to_rgb.py and vp_mapping.ipynb
 
 #### Results for the 2019 Hog Island Field Campaign
 
-![hog_island_2019_0](docs/pictures/hog_island_2019_0.png)
-![hog_island_2019_1](docs/pictures/hog_island_2019_1.png)
+![vp_map_hog_island_2019_0](docs/pictures/vp_map_hog_island_2019_0.png)
+![vp_map_hog_island_2019_1](docs/pictures/vp_map_hog_island_2019_1.png)
