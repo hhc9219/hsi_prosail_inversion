@@ -22,9 +22,7 @@ def main():
     lma = inverted_prosail[:, :, 5]
     lai = inverted_prosail[:, :, 6]
     psoil = inverted_prosail[:, :, 7]
-    sza = inverted_prosail[:, :, 8]
-    vza = inverted_prosail[:, :, 9]
-    raa = inverted_prosail[:, :, 10]
+    mask = inverted_prosail[:, :, 8]
 
     where_successful = success > 0.49
     percent_successful = np.sum(where_successful) / where_successful.size
@@ -38,9 +36,6 @@ def main():
     lma_mean = np.mean(lma[where_inverted])
     lai_mean = np.mean(lai[where_inverted])
     psoil_mean = np.mean(psoil[where_inverted])
-    sza_mean = np.mean(sza[where_inverted])
-    vza_mean = np.mean(vza[where_inverted])
-    raa_mean = np.mean(raa[where_inverted])
 
     n[~where_inverted] = n_mean
     cab[~where_inverted] = cab_mean
@@ -49,12 +44,9 @@ def main():
     lma[~where_inverted] = lma_mean
     lai[~where_inverted] = lai_mean
     psoil[~where_inverted] = psoil_mean
-    sza[~where_inverted] = sza_mean
-    vza[~where_inverted] = vza_mean
-    raa[~where_inverted] = raa_mean
 
-    param_names = ["Success", "N", "CAB", "CCX", "EWT", "LMA", "LAI", "PSOIL", "SZA", "VZA", "RAA"]
-    inv_params = [success, n, cab, ccx, ewt, lma, lai, psoil, sza, vza, raa]
+    param_names = ["Success", "N", "CAB", "CCX", "EWT", "LMA", "LAI", "PSOIL"]
+    inv_params = [success, n, cab, ccx, ewt, lma, lai, psoil]
 
     for name, inv_param in zip(param_names, inv_params):
         plt.figure()

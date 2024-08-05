@@ -37,12 +37,9 @@ class ProsailData(DynamicData):
         TYPELIDF=1,
         LIDFA=-1,
         LIDFB=0,
-        SZA_MIN=0,
-        SZA_MAX=90,
-        VZA_MIN=0,
-        VZA_MAX=90,
-        RAA_MIN=0,
-        RAA_MAX=360,
+        SZA=0,
+        VZA=0,
+        RAA=0,
         FACTOR="HDR",
     ):
         super().__init__()
@@ -65,12 +62,6 @@ class ProsailData(DynamicData):
         self.TYPELIDF = TYPELIDF
         self.LIDFA = LIDFA
         self.LIDFB = LIDFB
-        self.SZA_MIN = SZA_MIN
-        self.SZA_MAX = SZA_MAX
-        self.VZA_MIN = VZA_MIN
-        self.VZA_MAX = VZA_MAX
-        self.RAA_MIN = RAA_MIN
-        self.RAA_MAX = RAA_MAX
         self.FACTOR = FACTOR
         self.N = None
         self.CAB = None
@@ -80,9 +71,10 @@ class ProsailData(DynamicData):
         self.LAI = None
         self.PSOIL = None
         self.HSPOT = None
-        self.SZA = 1e-9  # initial guess of about 0 degrees
-        self.VZA = 1e-9  # initial guess of about 0 degrees
-        self.RAA = None
+        self.SZA = SZA
+        self.VZA = VZA
+        self.RAA = RAA
+
         avg = lambda a, b: 0.5 * (a + b)
         self.set_funcs(
             N=lambda N_MIN, N_MAX: avg(N_MIN, N_MAX),
@@ -92,13 +84,21 @@ class ProsailData(DynamicData):
             CCX=lambda CCX_MIN, CCX_MAX: avg(CCX_MIN, CCX_MAX),
             LAI=lambda LAI_MIN, LAI_MAX: avg(LAI_MIN, LAI_MAX),
             PSOIL=lambda PSOIL_MIN, PSOIL_MAX: avg(PSOIL_MIN, PSOIL_MAX),
-            RAA=lambda RAA_MIN, RAA_MAX: avg(RAA_MIN, RAA_MAX),
         )
         self.execute()
         self.set_funcs(HSPOT=lambda LAI: 0.5 / LAI)
         self.execute()
 
-    def run_prosail(self) -> tuple[NDArrayFloat | Any, ...]:
+    def run_prosail(
+        self, SZA: None | float = None, VZA: None | float = None, RAA: None | float = None
+    ) -> tuple[NDArrayFloat | Any, ...]:
+        if SZA is not None:
+            self.SZA = SZA
+        if VZA is not None:
+            self.VZA = VZA
+        if RAA is not None:
+            self.RAA = RAA
+
         reflectances = prosail.run_prosail(
             n=self.N,
             cab=self.CAB,
@@ -125,8 +125,11 @@ class ProsailData(DynamicData):
         self,
         wavelengths: NDArrayFloat,
         reflectances: NDArrayFloat,
+        SZA: None | float = None,
+        VZA: None | float = None,
+        RAA: None | float = None,
     ):
-        prosail_wavelengths, prosail_reflectances = self.run_prosail()
+        prosail_wavelengths, prosail_reflectances = self.run_prosail(SZA=SZA, VZA=VZA, RAA=RAA)
         interp_reflectances = np.interp(wavelengths, prosail_wavelengths, prosail_reflectances)
         return np.sqrt(np.mean((interp_reflectances - reflectances) ** 2))
 
@@ -134,6 +137,9 @@ class ProsailData(DynamicData):
         self,
         wavelengths: NDArrayFloat,
         reflectances: NDArrayFloat,
+        SZA: None | float = None,
+        VZA: None | float = None,
+        RAA: None | float = None,
         atol_rmse_residual=0.01,
         atol_wavelength=2.5,
         maxiter_factor=200,
@@ -141,14 +147,14 @@ class ProsailData(DynamicData):
     ):
         def fun(x, *args):
 
-            self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL, self.SZA, self.VZA, self.RAA = x
+            self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL = x
             self.execute()
-            return self.reflectance_rmse_residual(wavelengths, reflectances)
+            return self.reflectance_rmse_residual(wavelengths, reflectances, SZA=SZA, VZA=VZA, RAA=RAA)
 
         result = optimize.minimize(
             fun=fun,
             x0=np.array(
-                (self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL, self.SZA, self.VZA, self.RAA),
+                (self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL),
                 dtype=np.float64,
             ),
             method="Nelder-Mead",
@@ -160,21 +166,16 @@ class ProsailData(DynamicData):
                 (self.LMA_MIN, self.LMA_MAX),
                 (self.LAI_MIN, self.LAI_MAX),
                 (self.PSOIL_MIN, self.PSOIL_MAX),
-                (self.SZA_MIN, self.SZA_MAX),
-                (self.VZA_MIN, self.VZA_MAX),
-                (self.RAA_MIN, self.RAA_MAX),
             ),
             options={
                 "adaptive": is_adaptive,
                 "fatol": atol_rmse_residual,
                 "xatol": atol_wavelength,
-                "maxiter": maxiter_factor * 10,
+                "maxiter": maxiter_factor * 7,
             },
         )
         if result.success:
-            self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL, self.SZA, self.VZA, self.RAA = (
-                result.x
-            )
+            self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL = result.x
             self.execute()
         return result.success
 

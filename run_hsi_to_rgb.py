@@ -20,7 +20,8 @@ def main():
     img_name = input("Please enter the hsi to process from hsi_config.json: ")
 
     num_threads = max(THREADS - 3, 3)
-    max_bytes = max(int(MEMORY / 64 * 1e9), int(0.05e9))
+    min_bytes = int(0.05e9)
+    max_bytes = max(int(MEMORY / 64 * 1e9), min_bytes)
 
     hsi_hdr_path = Path(HSI_CONFIG[img_name]["hdr"])
     hsi_img_path = Path(HSI_CONFIG[img_name]["img"])
@@ -29,7 +30,8 @@ def main():
 
     hsi = hsi_io.open_envi_hsi_as_np_memmap(img_hdr_path=hsi_hdr_path, img_data_path=hsi_img_path, writable=False)
     h, w, _ = hsi.shape
-    with hsi_io.Memmap(OUTPUT_FOLDER / "rgb_result.npy", shape=(h, w, 3), dtype=np.uint8, mode="w+") as rgb_result:
+    rgb_path = OUTPUT_FOLDER / f"{img_name}_rgb_res.npy"
+    with hsi_io.Memmap(rgb_path, shape=(h, w, 3), dtype=np.uint8, mode="w+") as rgb_result:
         if rgb_result.array is not None:
 
             hsi_to_sRGB_mp(
@@ -42,11 +44,13 @@ def main():
 
     del hsi
 
-    if input("Convert rgb_result.npy to rgb_result.png? y/n: ") == "y":
+    if input("Would you like to convert the output .npy file to a .png? (y/n): ") == "y":
         from matplotlib import pyplot as plt
 
-        rgb = np.load(str(OUTPUT_FOLDER / "rgb_result.npy"))
-        plt.imsave(str(OUTPUT_FOLDER / "rgb_result.png"), rgb)
+        rgb = np.load(rgb_path)
+        plt.imsave(OUTPUT_FOLDER / f"{img_name}_rgb_res.png", rgb)
+
+    print("HSI to RGB conversion is complete.")
 
 
 if __name__ == "__main__":
