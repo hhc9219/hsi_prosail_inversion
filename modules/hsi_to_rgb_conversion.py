@@ -1,6 +1,7 @@
 import colour
 import numpy as np
-from .img_processing import float_img_to_dc, make_img_func_mp
+from pathlib import Path
+from .hsi_processing import make_hsi_func_envi_to_npy_mp
 from .typedefs import NDArrayFloat
 
 
@@ -55,7 +56,7 @@ class ColorConverter:
 
     def reflectances_to_sRGB(self, reflectances: NDArrayFloat):
         sRGB = self.reflectances_to_sRGB_float(reflectances=reflectances)
-        return float_img_to_dc(sRGB)
+        return (sRGB * 255).round().astype(np.uint8)
 
     def hsi_to_sRGB_float(self, hsi: NDArrayFloat):
         if hsi.ndim == 3:
@@ -69,7 +70,7 @@ class ColorConverter:
 
     def hsi_to_sRGB(self, hsi: NDArrayFloat):
         sRGB = self.hsi_to_sRGB_float(hsi)
-        return float_img_to_dc(sRGB)
+        return (sRGB * 255).round().astype(np.uint8)
 
 
 def hsi_to_sRGB(
@@ -89,20 +90,24 @@ def hsi_to_sRGB(
 
 
 def hsi_to_sRGB_mp(
-    hsi_src: np.ndarray,
-    rgb_dst: np.ndarray,
+    src_hsi_hdr_path: Path,
+    src_hsi_data_path: Path,
+    rgb_dst_npy_path: Path,
     original_wavelengths: NDArrayFloat,
     wavelengths_resample_interval: int | None = 1,
     illuminant=colour.SDS_ILLUMINANTS["D65"],
     cmfs=colour.MSDS_CMFS["CIE 1931 2 Degree Standard Observer"],
     num_threads: int = 2,
-    max_bytes=int(0.5e9),
-    show_progress=True,
+    max_bytes: int = int(0.05e9),
+    show_progress: bool = True,
 ):
-    hsi_to_sRGB_func = make_img_func_mp(hsi_to_sRGB)
+    hsi_to_sRGB_func = make_hsi_func_envi_to_npy_mp(hsi_to_sRGB)
     hsi_to_sRGB_func(
-        src=hsi_src,
-        dst=rgb_dst,
+        src_hsi_hdr_path=src_hsi_hdr_path,
+        src_hsi_data_path=src_hsi_data_path,
+        dst_npy_path=rgb_dst_npy_path,
+        dst_num_channels=3,
+        dst_dtype=np.uint8,
         num_threads=num_threads,
         max_bytes=max_bytes,
         show_progress=show_progress,
