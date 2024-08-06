@@ -83,9 +83,18 @@ If issues persist, a more complicated problem may need to be addressed.
 
 ## Showcase
 
-### run_hsi_to_rgb.py and vp_mapping.ipynb
+### RGB Images with Validation Points
+run_hsi_to_rgb.py & vp_mapping.ipynb
 
-#### Results for the 2019 Hog Island Field Campaign
+##### Results for the 2019 Hog Island Field Campaign
 
 ![vp_map_hog_island_2019_0](docs/pictures/vp_map_hog_island_2019_0.png)
 ![vp_map_hog_island_2019_1](docs/pictures/vp_map_hog_island_2019_1.png)
+
+### NDVI (Normalized Difference Vegetation Index)
+run_prosail_inversion.py
+
+##### Results for the 2019 Hog Island Field Campaign
+
+![ndvi_hog_island_2019_0](docs/pictures/ndvi_hog_island_2019_0.png)
+![ndvi_hog_island_2019_1](docs/pictures/ndvi_hog_island_2019_1.png)

@@ -58,7 +58,7 @@ def main():
         plt.savefig(FIGURES_FOLDER / (name + ".png"))
         plt.close()
 
-    print("Saved result to output folder.")
+    print("Saved the result to the output/figures folder.")
 
 
 if __name__ == "__main__":
