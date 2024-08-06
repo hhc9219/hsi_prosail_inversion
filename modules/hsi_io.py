@@ -36,54 +36,6 @@ class ParseEnviError(Exception):
     pass
 
 
-class Memmap:
-    def __init__(
-        self, npy_path: Path, shape: tuple[int, ...] | None = None, dtype: type = np.float64, mode: str = "r"
-    ):
-        self.npy_path = npy_path
-        self.shape = shape
-        self.dtype = dtype
-        self.mode = mode
-        self.array: np.memmap[Any, Any] | None = None
-        self.is_open = False
-
-    def open_array(self):
-        self.is_open = True
-        if self.mode in ["r", "c", "r+", "w+", "a+"]:
-            if self.mode == "w+" and self.shape is None:
-                raise ValueError("Shape must be specified when creating a new file.")
-            if self.mode != "a+":
-                self.array = np.lib.format.open_memmap(
-                    self.npy_path, mode=self.mode, dtype=self.dtype, shape=self.shape
-                )
-            else:
-                if self.npy_path.exists():
-                    self.array = np.lib.format.open_memmap(
-                        self.npy_path, mode="r+", dtype=self.dtype, shape=self.shape
-                    )
-                else:
-                    self.array = np.lib.format.open_memmap(
-                        self.npy_path, mode="w+", dtype=self.dtype, shape=self.shape
-                    )
-        else:
-            raise ValueError("Mode must be 'r', 'c', 'r+', 'w+', or 'a+'.")
-
-    def close_array(self):
-        if self.array is not None:
-            if self.mode in ["r+", "w+", "a+"]:
-                self.array.flush()
-            del self.array
-            self.array = None
-        self.is_open = False
-
-    def __enter__(self):
-        self.open_array()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close_array()
-
-
 def open_file_path(folder_name: str | None = None, ext: str | None = None, **kwargs: Any):
     initialdir = kwargs["initialdir"] if "initialdir" in kwargs else os.getcwd()
     if folder_name:

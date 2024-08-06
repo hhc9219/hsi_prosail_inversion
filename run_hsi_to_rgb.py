@@ -14,7 +14,8 @@ def set_globals():
 def main():
     import numpy as np
     from pathlib import Path
-    from modules import hsi_io
+    from modules.npmemmap import Memmap
+    from modules.hsi_io import get_wavelengths, open_envi_hsi_as_np_memmap
     from modules.hsi_to_rgb_conversion import hsi_to_sRGB_mp
 
     img_name = input("Please enter the hsi to process from hsi_config.json: ")
@@ -26,12 +27,12 @@ def main():
     hsi_hdr_path = Path(HSI_CONFIG[img_name]["hdr"])
     hsi_img_path = Path(HSI_CONFIG[img_name]["img"])
 
-    wavelengths = hsi_io.get_wavelengths(hsi_hdr_path)
+    wavelengths = get_wavelengths(hsi_hdr_path)
 
-    hsi = hsi_io.open_envi_hsi_as_np_memmap(img_hdr_path=hsi_hdr_path, img_data_path=hsi_img_path, writable=False)
+    hsi = open_envi_hsi_as_np_memmap(img_hdr_path=hsi_hdr_path, img_data_path=hsi_img_path, writable=False)
     h, w, _ = hsi.shape
     rgb_path = OUTPUT_FOLDER / f"{img_name}_rgb_res.npy"
-    with hsi_io.Memmap(rgb_path, shape=(h, w, 3), dtype=np.uint8, mode="w+") as rgb_result:
+    with Memmap(rgb_path, shape=(h, w, 3), dtype=np.uint8, mode="w+") as rgb_result:
         if rgb_result.array is not None:
 
             hsi_to_sRGB_mp(

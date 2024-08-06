@@ -17,7 +17,8 @@ def main():
     import numpy as np
     from PIL import Image
     from scipy.ndimage import gaussian_filter
-    from modules.hsi_io import Memmap, open_envi_hsi_as_np_memmap, get_wavelengths
+    from modules.npmemmap import Memmap
+    from modules.hsi_io import open_envi_hsi_as_np_memmap, get_wavelengths
     from modules.hsi_processing import where_dark_mp, calculate_ndvi_mp, copy_add_channels_mp
     from modules.prosail_inversion import invert_prosail_mp
 
@@ -263,6 +264,7 @@ def main():
         != "y"
     ):
         print("\nCreating hsi_geo_mask_stack:")
+        print("Copying the HSI to hsi_geo_mask_stack...")
         copy_add_channels_mp(
             src_hsi_hdr_path=hsi_hdr_path,
             src_hsi_data_path=hsi_img_path,
@@ -275,6 +277,7 @@ def main():
             show_progress=True,
         )
 
+    print("Copying the solar and sensor geometry along with the inversion mask to the hsi_geo_mask_stack...")
     hgms = Memmap(npy_path=hgms_path, shape=None, dtype=dt, mode="r+")
     with hgms:
         if hgms.array is None:

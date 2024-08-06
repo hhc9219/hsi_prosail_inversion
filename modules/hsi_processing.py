@@ -47,7 +47,8 @@ def make_hsi_func_envi_to_npy_mp(hsi_func: "Callable[..., np.ndarray]"):
     from multiprocessing import Process, shared_memory
     from numpy import ndarray
     from tqdm import tqdm
-    from .hsi_io import Memmap, open_envi_hsi_as_np_memmap
+    from .npmemmap import Memmap
+    from .hsi_io import open_envi_hsi_as_np_memmap
     from .img_processing import get_img_characteristics, get_num_parts_from_max_bytes, split_img_by_num_parts_2d_slices
 
     def mp_hsi_func(
@@ -197,7 +198,7 @@ def make_hsi_func_npy_to_npy_mp(hsi_func: "Callable[..., np.ndarray]"):
     from multiprocessing import Process, shared_memory
     from numpy import ndarray
     from tqdm import tqdm
-    from .hsi_io import Memmap
+    from .npmemmap import Memmap
     from .img_processing import get_img_characteristics, get_num_parts_from_max_bytes, split_img_by_num_parts_2d_slices
 
     def mp_hsi_func(
