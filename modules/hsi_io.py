@@ -24,10 +24,12 @@ from typing import Any
 try:
     import tkinter as tk
     from tkinter import filedialog
+
     root = tk.Tk()
     root.withdraw()
+    SUPPORT_FILEDIALOG = True
 except ImportError:
-    print("IO WARNING: Tkinter was not found on your system. Calls to open GUI file dialogs will fail.")
+    SUPPORT_FILEDIALOG = False
 
 
 class ParseEnviError(Exception):
@@ -47,16 +49,28 @@ class Memmap:
 
     def open_array(self):
         self.is_open = True
-        if self.mode in ["r", "c", "r+", "w+"]:
-            if self.mode in ["r+", "w+"] and self.shape is None:
+        if self.mode in ["r", "c", "r+", "w+", "a+"]:
+            if self.mode == "w+" and self.shape is None:
                 raise ValueError("Shape must be specified when creating a new file.")
-            self.array = np.lib.format.open_memmap(self.npy_path, mode=self.mode, dtype=self.dtype, shape=self.shape)
+            if self.mode != "a+":
+                self.array = np.lib.format.open_memmap(
+                    self.npy_path, mode=self.mode, dtype=self.dtype, shape=self.shape
+                )
+            else:
+                if self.npy_path.exists():
+                    self.array = np.lib.format.open_memmap(
+                        self.npy_path, mode="r+", dtype=self.dtype, shape=self.shape
+                    )
+                else:
+                    self.array = np.lib.format.open_memmap(
+                        self.npy_path, mode="w+", dtype=self.dtype, shape=self.shape
+                    )
         else:
-            raise ValueError("Mode must be 'r', 'c', 'r+', or 'w+'.")
+            raise ValueError("Mode must be 'r', 'c', 'r+', 'w+', or 'a+'.")
 
     def close_array(self):
         if self.array is not None:
-            if self.mode in ["r+", "w+"]:
+            if self.mode in ["r+", "w+", "a+"]:
                 self.array.flush()
             del self.array
             self.array = None
@@ -83,7 +97,10 @@ def open_file_path(folder_name: str | None = None, ext: str | None = None, **kwa
         filetypes = kwargs["filetypes"] if "filetypes" in kwargs else None
     if filetypes:
         kwargs["filetypes"] = filetypes
-    file_path = Path(filedialog.askopenfilename(**kwargs))
+    if SUPPORT_FILEDIALOG:
+        file_path = Path(filedialog.askopenfilename(**kwargs))
+    else:
+        raise SystemError("Tkinter was not found on your system. Cannot open GUI file dialog.")
     if str(file_path) == ".":
         raise Exception("No file was selected.")
     return file_path
