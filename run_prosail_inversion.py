@@ -284,7 +284,6 @@ def main():
             raise RuntimeError("hgms.array is None")
         hgms.array[:, :, -4:-1] = geo.astype(dt)
         hgms.array[:, :, -1] = inv_mask[:, :, 0].astype(dt)
-
     print("hsi_geo_mask_stack creation complete.")
     print(f"The hsi_geo_mask_stack result was saved to the ouput folder as:\n{hgms_path.name}\n")
 
