@@ -8,6 +8,8 @@ if TYPE_CHECKING:
 def invert_prosail(
     hsi_geo_mask_stack: "NDArrayFloat",
     wavelengths: "NDArrayFloat",
+    min_wavelength: float,
+    max_wavelength: float,
     atol_rmse_residual: float,
     atol_wavelength: float,
     maxiter_factor: int,
@@ -35,6 +37,12 @@ def invert_prosail(
 
     wavelengths : NDArrayFloat
         A 1D numpy array containing the wavelengths corresponding to the hyperspectral reflectance data.
+
+    min_wavelength : float
+        The minimum wavelength to consider for the inversion.
+
+    max_wavelength : float
+        The maximum wavelength to consider for the inversion.
 
     atol_rmse_residual : float
         The largest acceptable RMSE residual for fitting the reflectances.
@@ -88,21 +96,38 @@ def invert_prosail(
     num_hsi_channels = len(wavelengths)
     if num_channels != num_hsi_channels + 4:
         raise RuntimeError("The provided hsi_geo_mask_stack has the incorrect number of channels.")
-    hsi = hsi_geo_mask_stack[:, :num_hsi_channels]
-    geo = hsi_geo_mask_stack[
-        :, num_hsi_channels:-1
-    ]  # geo has three channels 0 is solar_zenith, 1 is sensor_zenith, 2 is relative_azimuth
+
+    for i in range(num_hsi_channels):
+        val = wavelengths[i]
+        if val >= min_wavelength:
+            start_idx = i
+            break
+
+    for i in range(num_hsi_channels - 1, -1, -1):
+        val = wavelengths[i]
+        if val <= max_wavelength:
+            end_idx = i + 1
+            break
+
+    wavs = wavelengths[start_idx:end_idx]
+    hsi = hsi_geo_mask_stack[:, start_idx:end_idx]
+
+    # geo has three channels 0 is solar_zenith, 1 is sensor_zenith, 2 is relative_azimuth
+    geo = hsi_geo_mask_stack[:, num_hsi_channels:-1]
     float_mask = hsi_geo_mask_stack[:, -1]
-    mask = float_mask.round().astype(bool)
+
     inversion_result = np_zeros(shape=(num_pixels, 9), dtype=np_float64)
     inversion_result[:, -1] = float_mask
+    mask = float_mask.round().astype(bool)
+
     pd = ProsailData()
     initial_values = pd.N, pd.CAB, pd.CCX, pd.EWT, pd.LMA, pd.LAI, pd.PSOIL
+
     for i in range(num_pixels):
         if mask[i]:
             try:
                 success = pd.fit_to_reflectances(
-                    wavelengths=wavelengths,
+                    wavelengths=wavs,
                     reflectances=hsi[i],
                     SZA=geo[i, 0],
                     VZA=geo[i, 1],
@@ -131,6 +156,8 @@ def invert_prosail_mp(
     src_dtype: type,
     inv_res_dst_npy_path: "Path",
     wavelengths: "NDArrayFloat",
+    min_wavelength: float,
+    max_wavelength: float,
     atol_rmse_residual: float,
     atol_wavelength: float,
     maxiter_factor: int,
@@ -161,6 +188,8 @@ def invert_prosail_mp(
         max_bytes=max_bytes,
         show_progress=show_progress,
         wavelengths=wavelengths,
+        min_wavelength=min_wavelength,
+        max_wavelength=max_wavelength,
         atol_rmse_residual=atol_rmse_residual,
         atol_wavelength=atol_wavelength,
         maxiter_factor=maxiter_factor,

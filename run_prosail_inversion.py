@@ -44,11 +44,13 @@ def main():
     # Masking threshold settings
     DARK_THRESHOLD = 1e-9
     NDVI_THRESHOLD = 0.1
-    NDVI_BLUR_SIGMA = -1.0  # -1.0 for no blur
+    NDVI_BLUR_SIGMA = -1.0  # -1.0 for no blur, > 0 for blur
     MIN_TO_INVERT_PCT = 1e-9  # 0-1 : The minimum percentage of pixels which should be inverted
     # end
 
     # PROSAIL inversion call settings
+    MIN_WAVELENGTH = 400.0  # minimally 400 [nm]
+    MAX_WAVELENGTH = 900.0  # maximally 2500 [nm]
     ATOL_RMSE_RESIDUAL = 0.1  # 0.1-0.01
     ATOL_WAVELENGTH = 10  # 10-1
     MAXITER_FACTOR = 100  # 100-200
@@ -278,8 +280,7 @@ def main():
         )
 
     print("Copying the solar and sensor geometry along with the inversion mask to the hsi_geo_mask_stack...")
-    hgms = Memmap(npy_path=hgms_path, shape=None, dtype=dt, mode="r+")
-    with hgms:
+    with Memmap(npy_path=hgms_path, shape=None, dtype=dt, mode="r+") as hgms:
         if hgms.array is None:
             raise RuntimeError("hgms.array is None")
         hgms.array[:, :, -4:-1] = geo.astype(dt)
@@ -298,6 +299,8 @@ def main():
         src_dtype=dt,
         inv_res_dst_npy_path=inv_path,
         wavelengths=wavelengths,
+        min_wavelength=MIN_WAVELENGTH,
+        max_wavelength=MAX_WAVELENGTH,
         atol_rmse_residual=ATOL_RMSE_RESIDUAL,
         atol_wavelength=ATOL_WAVELENGTH,
         maxiter_factor=MAXITER_FACTOR,
