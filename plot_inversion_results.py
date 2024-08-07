@@ -9,12 +9,14 @@ def main():
     from matplotlib import pyplot as plt
 
     HSI_NAME = input("Please enter the hsi to process from hsi_config.json: ")
-    inv_path = OUTPUT_FOLDER / f"{HSI_NAME}_inv_res.npy"
+    DPI = int(input("Please enter the dpi to use for the plots (Ex. 300) : "))
+    print("Creating plots...")
 
     CMAP = "viridis"
 
     FIGURES_FOLDER = OUTPUT_FOLDER / "figures"
     FIGURES_FOLDER.mkdir(parents=True, exist_ok=True)
+    inv_path = OUTPUT_FOLDER / f"{HSI_NAME}_inv_res.npy"
 
     inverted_prosail = np.load(inv_path)
 
@@ -54,16 +56,16 @@ def main():
     inv_params = [success, n, cab, ccx, ewt, lma, lai, psoil, rsoil, mask]
 
     for name, inv_param in zip(param_names, inv_params):
-        plt.figure()
+        plt.figure(dpi=DPI)
         plt.imshow(inv_param, cmap=CMAP, interpolation="none")
         plt.colorbar()
         title = name if name != "Success" else name + ": " + str(int(round(percent_successful * 100))) + "%"
         plt.title(title)
-        plt.savefig(FIGURES_FOLDER / (name + "_plot.png"))
+        plt.savefig(FIGURES_FOLDER / (HSI_NAME + "_" + name + "_plot.png"))
         plt.close()
 
         inv_param_img = Image.fromarray((inv_param / inv_param.max() * 255.0).round().astype(np.uint8), mode="L")
-        inv_param_img.save(FIGURES_FOLDER / (name + ".png"))
+        inv_param_img.save(FIGURES_FOLDER / (HSI_NAME + "_" + name + ".png"))
 
     print("Saved the result to the output/figures folder.")
 
