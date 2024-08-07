@@ -34,9 +34,11 @@ def main():
     # PROSAIL inversion call settings
     # See modules.prosail_inversion for documentation
     # (For specific parameter settings: See modules.prosail_data)
-    ATOL_RMSE_RESIDUAL = 0.1  # 0.1-0.01
-    ATOL_WAVELENGTH = 10  # 10-1
-    MAXITER_FACTOR = 100  # 100-200
+    MIN_WAVELENGTH = 400.0  # minimally 400 [nm]
+    MAX_WAVELENGTH = 900.0  # maximally 2500 [nm]
+    ATOL_RMSE_RESIDUAL = 0.01  # 0.1-0.01
+    ATOL_WAVELENGTH = 1  # 10-1
+    MAXITER_FACTOR = 200  # 100-200
     IS_ADAPTIVE = True
     PRINT_ERRORS = True
     # end
@@ -46,16 +48,6 @@ def main():
     NDVI_THRESHOLD = 0.1
     NDVI_BLUR_SIGMA = -1.0  # -1.0 for no blur, > 0 for blur
     MIN_TO_INVERT_PCT = 1e-9  # 0-1 : The minimum percentage of pixels which should be inverted
-    # end
-
-    # PROSAIL inversion call settings
-    MIN_WAVELENGTH = 400.0  # minimally 400 [nm]
-    MAX_WAVELENGTH = 900.0  # maximally 2500 [nm]
-    ATOL_RMSE_RESIDUAL = 0.1  # 0.1-0.01
-    ATOL_WAVELENGTH = 10  # 10-1
-    MAXITER_FACTOR = 100  # 100-200
-    IS_ADAPTIVE = True
-    PRINT_ERRORS = True
     # end
 
     # Memory management settings

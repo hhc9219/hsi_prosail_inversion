@@ -63,10 +63,10 @@ def invert_prosail(
     Returns:
     -------
     inversion_result : NDArrayFloat
-        A 2D numpy array with dimensions (num_pixels, 9) where:
+        A 2D numpy array with dimensions (num_pixels, 10) where:
         - The first column (index 0) contains a binary inversion success indicator (1.0 for success, 0.0 for failure)
-        - The last column (index 8) contains the original floating-point mask values.
-        - The columns in between (indices 1 to 7) contain the inversion results, which are:
+        - The last column (index 9) contains the original floating-point mask values.
+        - The columns in between (indices 1 to 8) contain the inversion results, which are:
           - Inverted PROSAIL parameters:
             - N:     (index 1)
             - CAB:   (index 2)
@@ -75,6 +75,7 @@ def invert_prosail(
             - LMA:   (index 5)
             - LAI:   (index 6)
             - PSOIL: (index 7)
+            - RSOIL: (index 8)
 
     Raises:
     ------
@@ -116,12 +117,12 @@ def invert_prosail(
     geo = hsi_geo_mask_stack[:, num_hsi_channels:-1]
     float_mask = hsi_geo_mask_stack[:, -1]
 
-    inversion_result = np_zeros(shape=(num_pixels, 9), dtype=np_float64)
+    inversion_result = np_zeros(shape=(num_pixels, 10), dtype=np_float64)
     inversion_result[:, -1] = float_mask
     mask = float_mask.round().astype(bool)
 
     pd = ProsailData()
-    initial_values = pd.N, pd.CAB, pd.CCX, pd.EWT, pd.LMA, pd.LAI, pd.PSOIL
+    initial_values = pd.N, pd.CAB, pd.CCX, pd.EWT, pd.LMA, pd.LAI, pd.PSOIL, pd.RSOIL
 
     for i in range(num_pixels):
         if mask[i]:
@@ -138,7 +139,8 @@ def invert_prosail(
                     is_adaptive=is_adaptive,
                 )
                 inversion_result[i, :-1] = np_array(
-                    [float(success), pd.N, pd.CAB, pd.CCX, pd.EWT, pd.LMA, pd.LAI, pd.PSOIL], dtype=np_float64
+                    [float(success), pd.N, pd.CAB, pd.CCX, pd.EWT, pd.LMA, pd.LAI, pd.PSOIL, pd.RSOIL],
+                    dtype=np_float64,
                 )
                 if not success:
                     raise RuntimeError("PROSAIL inversion did not succeed.")
@@ -146,7 +148,7 @@ def invert_prosail(
                 if print_errors:
                     print(f"Pixel {i} did not invert successfully. {e}")
             finally:
-                pd.N, pd.CAB, pd.CCX, pd.EWT, pd.LMA, pd.LAI, pd.PSOIL = initial_values
+                pd.N, pd.CAB, pd.CCX, pd.EWT, pd.LMA, pd.LAI, pd.PSOIL, pd.RSOIL = initial_values
                 pd.execute()
     return inversion_result
 
@@ -182,7 +184,7 @@ def invert_prosail_mp(
         src_npy_path=geo_mask_stack_src_npy_path,
         src_dtype=src_dtype,
         dst_npy_path=inv_res_dst_npy_path,
-        dst_num_channels=9,
+        dst_num_channels=10,
         dst_dtype=float64,
         num_threads=num_threads,
         max_bytes=max_bytes,

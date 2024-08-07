@@ -5,6 +5,7 @@ def set_globals():
 
 def main():
     import numpy as np
+    from PIL import Image
     from matplotlib import pyplot as plt
 
     HSI_NAME = input("Please enter the hsi to process from hsi_config.json: ")
@@ -25,7 +26,8 @@ def main():
     lma = inverted_prosail[:, :, 5]
     lai = inverted_prosail[:, :, 6]
     psoil = inverted_prosail[:, :, 7]
-    mask = inverted_prosail[:, :, 8]
+    rsoil = inverted_prosail[:, :, 8]
+    mask = inverted_prosail[:, :, 9]
 
     where_inverted = success > 0.99
     percent_successful = success.round().sum() / mask.round().sum()
@@ -37,6 +39,7 @@ def main():
     lma_mean = np.mean(lma[where_inverted])
     lai_mean = np.mean(lai[where_inverted])
     psoil_mean = np.mean(psoil[where_inverted])
+    rsoil_mean = np.mean(rsoil[where_inverted])
 
     n[~where_inverted] = n_mean
     cab[~where_inverted] = cab_mean
@@ -45,9 +48,10 @@ def main():
     lma[~where_inverted] = lma_mean
     lai[~where_inverted] = lai_mean
     psoil[~where_inverted] = psoil_mean
+    rsoil[~where_inverted] = rsoil_mean
 
-    param_names = ["Success", "N", "CAB", "CCX", "EWT", "LMA", "LAI", "PSOIL", "Mask"]
-    inv_params = [success, n, cab, ccx, ewt, lma, lai, psoil, mask]
+    param_names = ["Success", "N", "CAB", "CCX", "EWT", "LMA", "LAI", "PSOIL", "RSOIL", "Mask"]
+    inv_params = [success, n, cab, ccx, ewt, lma, lai, psoil, rsoil, mask]
 
     for name, inv_param in zip(param_names, inv_params):
         plt.figure()
@@ -55,8 +59,11 @@ def main():
         plt.colorbar()
         title = name if name != "Success" else name + ": " + str(int(round(percent_successful * 100))) + "%"
         plt.title(title)
-        plt.savefig(FIGURES_FOLDER / (name + ".png"))
+        plt.savefig(FIGURES_FOLDER / (name + "_plot.png"))
         plt.close()
+
+        inv_param_img = Image.fromarray((inv_param / inv_param.max() * 255.0).round().astype(np.uint8), mode="L")
+        inv_param_img.save(FIGURES_FOLDER / (name + ".png"))
 
     print("Saved the result to the output/figures folder.")
 

@@ -33,7 +33,8 @@ class ProsailData(DynamicData):
         LAI_MAX=10,
         PSOIL_MIN=0.2,
         PSOIL_MAX=1,
-        RSOIL=1,
+        RSOIL_MIN=0.1,
+        RSOIL_MAX=1,
         TYPELIDF=1,
         LIDFA=-1,
         LIDFB=0,
@@ -58,7 +59,8 @@ class ProsailData(DynamicData):
         self.LAI_MAX = LAI_MAX
         self.PSOIL_MIN = PSOIL_MIN
         self.PSOIL_MAX = PSOIL_MAX
-        self.RSOIL = RSOIL
+        self.RSOIL_MIN = RSOIL_MIN
+        self.RSOIL_MAX = RSOIL_MAX
         self.TYPELIDF = TYPELIDF
         self.LIDFA = LIDFA
         self.LIDFB = LIDFB
@@ -70,6 +72,7 @@ class ProsailData(DynamicData):
         self.CCX = None
         self.LAI = None
         self.PSOIL = None
+        self.RSOIL = None
         self.HSPOT = None
         self.SZA = SZA
         self.VZA = VZA
@@ -84,6 +87,7 @@ class ProsailData(DynamicData):
             CCX=lambda CCX_MIN, CCX_MAX: avg(CCX_MIN, CCX_MAX),
             LAI=lambda LAI_MIN, LAI_MAX: avg(LAI_MIN, LAI_MAX),
             PSOIL=lambda PSOIL_MIN, PSOIL_MAX: avg(PSOIL_MIN, PSOIL_MAX),
+            RSOIL=lambda RSOIL_MIN, RSOIL_MAX: avg(RSOIL_MIN, RSOIL_MAX),
         )
         self.execute()
         self.set_funcs(HSPOT=lambda LAI: 0.5 / LAI)
@@ -147,14 +151,14 @@ class ProsailData(DynamicData):
     ):
         def fun(x, *args):
 
-            self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL = x
+            self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL, self.RSOIL = x
             self.execute()
             return self.reflectance_rmse_residual(wavelengths, reflectances, SZA=SZA, VZA=VZA, RAA=RAA)
 
         result = optimize.minimize(
             fun=fun,
             x0=np.array(
-                (self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL),
+                (self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL, self.RSOIL),
                 dtype=np.float64,
             ),
             method="Nelder-Mead",
@@ -166,16 +170,17 @@ class ProsailData(DynamicData):
                 (self.LMA_MIN, self.LMA_MAX),
                 (self.LAI_MIN, self.LAI_MAX),
                 (self.PSOIL_MIN, self.PSOIL_MAX),
+                (self.RSOIL_MIN, self.RSOIL_MAX),
             ),
             options={
                 "adaptive": is_adaptive,
                 "fatol": atol_rmse_residual,
                 "xatol": atol_wavelength,
-                "maxiter": maxiter_factor * 7,
+                "maxiter": maxiter_factor * 8,
             },
         )
         if result.success:
-            self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL = result.x
+            self.N, self.CAB, self.CCX, self.EWT, self.LMA, self.LAI, self.PSOIL, self.RSOIL = result.x
             self.execute()
         return result.success
 
